@@ -4,6 +4,10 @@ import torch
 import torch.nn as nn
 from pytorch_lightning.core.module import LightningModule
 
+from torch.utils.tensorboard import SummaryWriter
+tb = SummaryWriter()
+
+
 LOGGER = logging.getLogger()
 # LOGGER.setLevel(logging.DEBUG)
 # LOGGER.debug('Test Message')
@@ -127,7 +131,7 @@ class DeepSymNet(LightningModule):
         LOGGER.debug(f'Model \n  {self.forward(x)}')
         y_hat = self.forward(x)
         loss = self.binary_cross_entropy_loss(y_hat, y)
-        self.log("training_loss", loss, on_epoch=True, prog_bar=True)
+        self.log("training_loss", loss, on_epoch=True, on_step=True, prog_bar=True)
         return loss
 
     def validation_step(self, val_batch, batch_idx):
