@@ -4,9 +4,6 @@ import torch
 import torch.nn as nn
 from pytorch_lightning.core.module import LightningModule
 
-from torch.utils.tensorboard import SummaryWriter
-tb = SummaryWriter()
-
 
 LOGGER = logging.getLogger()
 # LOGGER.setLevel(logging.DEBUG)
