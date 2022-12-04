@@ -33,10 +33,12 @@ def crop_black_and_white_loader(path):
 class CTDataModule(pl.LightningDataModule):
     def __init__(self,
                  data_dir: str,
-                 batch_size: int = 4):
+                 batch_size: int = 4,
+                 num_workers: int = 0):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
+        self.num_workers = num_workers
 
         self.train_transform = transforms.Compose([
             transforms.RandomHorizontalFlip(p=0.5),
@@ -72,16 +74,22 @@ class CTDataModule(pl.LightningDataModule):
                                                 transform=self.base_transform )
 
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.data_train, batch_size=self.batch_size, shuffle=True, num_workers=0)
+        return torch.utils.data.DataLoader(self.data_train,
+                                           batch_size=self.batch_size,
+                                           shuffle=True,
+                                           num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(self.data_validation, batch_size=self.batch_size, num_workers=0)
+        return torch.utils.data.DataLoader(self.data_validation,
+                                           batch_size=self.batch_size,
+                                           num_workers=self.num_workers)
 
     def predict_dataloader(self):
-        return torch.utils.data.DataLoader(self.dataset, batch_size=self.batch_size, num_workers=0)
+        return torch.utils.data.DataLoader(self.dataset, batch_size=self.batch_size,
+                                           num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.dataset, batch_size=self.batch_size, num_workers=0, shuffle=True)
+        return torch.utils.data.DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
 
 class NoLabelDataset(VisionDataset):

@@ -6,8 +6,8 @@ from neural_network import DeepSymNet
 
 if __name__ == "__main__":
 
-    data_dir_new = '../playground_brains'
-    dm = CTDataModule(data_dir=data_dir_new, batch_size=32)
+    data_dir_new = '/home/high_fly_bird/Data/brain_dataset'
+    dm = CTDataModule(data_dir=data_dir_new, batch_size=64, num_workers=16)
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss', #
         save_on_train_epoch_end=True,
