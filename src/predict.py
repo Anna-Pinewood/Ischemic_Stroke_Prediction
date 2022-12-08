@@ -32,14 +32,14 @@ def plot_conf_matr(y_true, y_pred, nsamples: int, title: str = ''):
 
 if __name__ == "__main__":
 
-    data_dir_new = '../circles_dataset_mixed'
+    data_dir_new = '/home/high_fly_bird/Data/brain_dataset'
     dm = CTDataModule(data_dir=data_dir_new, batch_size=32)
-    dm.setup('predict')
+    dm.setup('test')
 
-    ckpt_path = '/Users/olipina001/Workspace/Other/Stroke_Prediction/lightning_logs/version_0/checkpoints/epoch=12-step=650.ckpt'
+    ckpt_path = '//home/high_fly_bird/Workspace/Ischemic_Stroke_Prediction/lightning_logs/version_4/checkpoints/epoch=50-step=153.ckpt'
     model = DeepSymNet.load_from_checkpoint(ckpt_path)
 
 
     trainer = pl.Trainer()
-    predictions = trainer.predict(model, datamodule=dm)
+    predictions = trainer.test(model, datamodule=dm)
 

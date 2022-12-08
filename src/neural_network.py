@@ -6,9 +6,10 @@ import torch.nn as nn
 from pytorch_lightning.core.module import LightningModule
 from sklearn.metrics import confusion_matrix, f1_score
 
-from src.utils import maxpool_output_shape
+from utils import maxpool_output_shape
 
 LOGGER = logging.getLogger()
+# LOGGER.setLevel(logging.DEBUG)
 
 IMG_HEIGHT = 128
 IMG_WIDTH = 98
@@ -119,12 +120,12 @@ class DeepSymNet(LightningModule):
             nn.MaxPool2d(kernel_size=3, padding=1))
 
         height_new, width_new = maxpool_output_shape(
-            input_size=(IMG_HEIGHT, IMG_WIDTH),
+            input_size=(IMG_HEIGHT, IMG_WIDTH//2),
             layer=self.shared_tunnel[-1])
         units_fc = height_new * width_new * 256
 
         self.fc1 = nn.Sequential(
-            nn.Linear(185856, 1) # units_fc TODO
+            nn.Linear(units_fc, 1) # units_fc TODO
         )
         self.threshold = None
 
@@ -146,7 +147,7 @@ class DeepSymNet(LightningModule):
         return output
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-5)
         return optimizer
 
     def binary_cross_entropy_loss(self, y_predicted, y_true):

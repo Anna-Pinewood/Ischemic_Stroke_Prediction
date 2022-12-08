@@ -41,7 +41,7 @@ class CTDataModule(pl.LightningDataModule):
         self.num_workers = num_workers
 
         self.train_transform = transforms.Compose([
-            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomHorizontalFlip(p=0.5), # СОМНИТЕЛЬНО 
             transforms.RandomVerticalFlip(p=0.5),
         ])
 
