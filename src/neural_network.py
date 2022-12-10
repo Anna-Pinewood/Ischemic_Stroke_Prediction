@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from pytorch_lightning.core.module import LightningModule
-from sklearn.metrics import confusion_matrix, f1_score
+from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
 
 from utils import maxpool_output_shape
 
@@ -174,8 +174,9 @@ class DeepSymNet(LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        conf_matr = confusion_matrix(y_hat, y)
-        return conf_matr
+        roc_auc = roc_auc_score(y ,y_hat)
+        print(roc_auc)
+        return roc_auc
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         x, y = batch

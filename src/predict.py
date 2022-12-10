@@ -2,7 +2,7 @@ import pandas as pd
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from src.CTDataModule import CTDataModule
+from CTDataModule import CTDataModule
 from neural_network import DeepSymNet
 
 import sklearn
@@ -32,7 +32,7 @@ def plot_conf_matr(y_true, y_pred, nsamples: int, title: str = ''):
 
 if __name__ == "__main__":
 
-    data_dir_new = '/home/high_fly_bird/Data/brain_dataset'
+    data_dir_new = '/home/high_fly_bird/Data/test_ischemic'
     dm = CTDataModule(data_dir=data_dir_new, batch_size=32)
     dm.setup('test')
 
