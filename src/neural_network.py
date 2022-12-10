@@ -175,7 +175,7 @@ class DeepSymNet(LightningModule):
         x, y = batch
         y_hat = self.forward(x)
         roc_auc = roc_auc_score(y ,y_hat)
-        print(roc_auc)
+        print(f'\n\n {roc_auc} \n\n')
         return roc_auc
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
