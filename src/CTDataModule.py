@@ -30,26 +30,26 @@ def crop_black_and_white_loader(path):
     img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     return crop_image(img)
 
-'''def gauss_noise_tensor(img):
+def gauss_noise_tensor(img):
     assert isinstance(img, torch.Tensor)
     dtype = img.dtype
     if not img.is_floating_point():
         img = img.to(torch.float32)
     
-    sigma = 25.0
+    sigma = 1.0
     
     out = img + sigma * torch.randn_like(img)
     
     if out.dtype != dtype:
         out = out.to(dtype)
         
-    return out'''
+    return out
 
-def random_sharpness_or_blur():
+def random_sharpness_or_blur(img):
     rand_trans = [transforms.RandomAdjustSharpness(sharpness_factor=2), transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1))]
     trans_idx = random.randint(0, 1)
     trans = rand_trans[trans_idx]
-    return trans    
+    return trans(img)    
 
 class CTDataModule(pl.LightningDataModule):
     def __init__(self,
@@ -66,8 +66,8 @@ class CTDataModule(pl.LightningDataModule):
             transforms.RandomVerticalFlip(p=0.5),
             transforms.ColorJitter(brightness=.2, contrast=.7, saturation=.1, hue=.1),
             #transforms.GaussianBlur(kernel_size=(7, 13), sigma=(0.1, 0.2)),
-            #gauss_noise_tensor,
-            random_sharpness_or_blur(),
+            gauss_noise_tensor,
+            random_sharpness_or_blur,
         ])
 
         self.base_transform = transforms.Compose([
