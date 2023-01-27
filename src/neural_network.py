@@ -4,8 +4,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 from pytorch_lightning.core.module import LightningModule
-from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
+from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score, mean_squared_error
 
+import pandas as pd
 from utils import maxpool_output_shape
 
 LOGGER = logging.getLogger()
@@ -175,7 +176,13 @@ class DeepSymNet(LightningModule):
         x, y = batch
         y_hat = self.forward(x)
         roc_auc = roc_auc_score(y ,y_hat)
-        print(f'\n\n {roc_auc} \n\n')
+        rmse = np.sqrt(mean_squared_error(y, y_hat))
+        print(pd.DataFrame({
+            'real': y,
+            'predicted': y_hat
+        }).sort_values('predicted'))
+        print(f'\nroc_auc = {roc_auc:.4f}')
+        print('rmse = ', round(rmse,4), '\n')
         return roc_auc
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
