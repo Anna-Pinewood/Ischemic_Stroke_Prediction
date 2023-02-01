@@ -1,5 +1,6 @@
 """Training runner from terminal."""
 import logging
+import os
 
 import click
 import pytorch_lightning as pl
@@ -14,9 +15,10 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('dataset_path', type=click.Path(exists=True))
-# @click.option('--test-mode', type=bool, default=True)
-@click.option('--checkpoints_path', type=click.Path(), default="./lightning_logs/",
-              help="Path where trained model will be saved.")
+@click.option('--checkpoints_path', type=click.Path(), default=".",
+              help=("Path where trained model will be saved."
+                    "It selected path a folder /lightning_logs/"
+                    "will be created and models will be inside."))
 @click.option('--batch_size', type=int, default=32,
               help="Batch size in a datamodule.")
 @click.option('--num_workers', type=int, default=6,
@@ -46,6 +48,9 @@ def main(**params):
     patience = params["callback_patience"]
     max_epochs = params["max_epochs"]
     checkpoints_path = params["checkpoints_path"]
+
+    logger.info("Model will be saved in %s", str(
+        os.path.abspath(checkpoints_path)))
 
     dm = CTDataModule(data_dir=dataset_path,
                       batch_size=batch_size, num_workers=num_workers)

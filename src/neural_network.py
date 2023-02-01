@@ -5,9 +5,10 @@ import torch
 import torch.nn as nn
 from pytorch_lightning.core.module import LightningModule
 from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score, mean_squared_error
+# from torchmetrics.classification import BinaryConfusionMatrix
 
 import pandas as pd
-from utils import maxpool_output_shape
+from src.utils import maxpool_output_shape
 
 LOGGER = logging.getLogger()
 # LOGGER.setLevel(logging.DEBUG)
@@ -39,7 +40,8 @@ class InceptionBlock(nn.Module):
         self.branch_1filter = ConvBlock(in_channels, out_1x1, kernel_size=1)
 
         self.branch_3filter = nn.Sequential(ConvBlock(in_channels, reduce_3x3, kernel_size=1),
-                                            ConvBlock(reduce_3x3, out_3x3, kernel_size=3, padding=1)
+                                            ConvBlock(
+                                                reduce_3x3, out_3x3, kernel_size=3, padding=1)
                                             )
         self.branch_5filter = nn.Sequential(
             ConvBlock(in_channels, reduce_5x5, kernel_size=1),
@@ -51,7 +53,8 @@ class InceptionBlock(nn.Module):
         )
 
     def forward(self, x):
-        branches = (self.branch_1filter, self.branch_3filter, self.branch_5filter, self.branch_maxpool)
+        branches = (self.branch_1filter, self.branch_3filter,
+                    self.branch_5filter, self.branch_maxpool)
         output = torch.cat([branch(x) for branch in branches], 1)
         return output
 
@@ -126,14 +129,15 @@ class DeepSymNet(LightningModule):
         units_fc = height_new * width_new * 256
 
         self.fc1 = nn.Sequential(
-            nn.Linear(units_fc, 1) # units_fc TODO
+            nn.Linear(units_fc, 1)  # units_fc TODO
         )
         self.threshold = None
 
     def forward(self, x):
         LOGGER.debug(f'Input shape is {x.shape}')
         output_siam = self.siamese_part(x)
-        LOGGER.debug(f'Output of SiameseAndDifferenceBlock block is {output_siam.shape}')
+        LOGGER.debug(
+            f'Output of SiameseAndDifferenceBlock block is {output_siam.shape}')
         output = self.shared_tunnel(output_siam)
         LOGGER.debug(f'Output of IM-IM-MP block is {output.shape}')
 
@@ -162,7 +166,8 @@ class DeepSymNet(LightningModule):
         x, y = batch
         y_hat = self.forward(x)
         loss = self.binary_cross_entropy_loss(y_hat, y)
-        self.log("training_loss", loss, on_epoch=True, on_step=True, prog_bar=True)
+        self.log("training_loss", loss, on_epoch=True,
+                 on_step=True, prog_bar=True)
         return loss
 
     def validation_step(self, val_batch, batch_idx):
@@ -175,15 +180,12 @@ class DeepSymNet(LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        roc_auc = roc_auc_score(y ,y_hat)
+        roc_auc = roc_auc_score(y, y_hat)
+        f1_metric = f1_score(y, y_hat)
         rmse = np.sqrt(mean_squared_error(y, y_hat))
-        print(pd.DataFrame({
-            'real': y,
-            'predicted': y_hat
-        }).sort_values('predicted'))
-        print(f'\nroc_auc = {roc_auc:.4f}')
-        print('rmse = ', round(rmse,4), '\n')
-        return roc_auc
+        self.log('roc_auc', roc_auc)
+        self.log('f1_metric', f1_metric)
+        self.log('rmse', rmse)
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         x, y = batch

@@ -10,46 +10,14 @@ from torchvision import datasets, transforms
 from torchvision.datasets.vision import VisionDataset
 import random
 
-
-def crop_image(img: np.ndarray, tolerance=70) -> Image.Image:
-    """
-    Crops black borders of image.
-    Parameters
-    ----------
-    img: Image to crop
-    tolerance: how hard would black borders be cropped.
-    If 0 - no cropping.
-    """
-    mask = img > tolerance
-    cropped = img[np.ix_(mask.any(1), mask.any(0))]
-    PIL_image = Image.fromarray(cropped)
-    return PIL_image
+from src.image_transforms import crop_image, random_sharpness_or_blur
 
 
 def crop_black_and_white_loader(path):
     img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    # arr = cv2.threshold(img, 128, 1, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
     return crop_image(img)
 
-def gauss_noise_tensor(img):
-    assert isinstance(img, torch.Tensor)
-    dtype = img.dtype
-    if not img.is_floating_point():
-        img = img.to(torch.float32)
-    
-    sigma = 1.0
-    
-    out = img + sigma * torch.randn_like(img)
-    
-    if out.dtype != dtype:
-        out = out.to(dtype)
-        
-    return out
-
-def random_sharpness_or_blur(img):
-    rand_trans = [transforms.RandomAdjustSharpness(sharpness_factor=2), transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1))]
-    trans_idx = random.randint(0, 1)
-    trans = rand_trans[trans_idx]
-    return trans(img)    
 
 class CTDataModule(pl.LightningDataModule):
     def __init__(self,
@@ -63,19 +31,18 @@ class CTDataModule(pl.LightningDataModule):
 
         self.train_transform = transforms.Compose([
             transforms.RandomVerticalFlip(p=0.5),
-            transforms.ColorJitter(brightness=.2, contrast=.7, saturation=.1, hue=.1),
-            # gauss_noise_tensor,
+            transforms.ColorJitter(
+                brightness=.2, contrast=.7, saturation=.1, hue=.1),
             random_sharpness_or_blur,
         ])
 
         self.base_transform = transforms.Compose([
-            transforms.Resize((128, 98), interpolation=transforms.InterpolationMode.BILINEAR),
+            transforms.Resize(
+                (128, 98), interpolation=transforms.InterpolationMode.BILINEAR),
             transforms.ToTensor(),
         ])
 
         self.num_classes = 2
-
-    
 
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
@@ -96,7 +63,7 @@ class CTDataModule(pl.LightningDataModule):
         if stage == 'test':
             self.dataset = datasets.ImageFolder(self.data_dir,
                                                 loader=crop_black_and_white_loader,
-                                                transform=self.base_transform )
+                                                transform=self.base_transform)
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(self.data_train,
@@ -118,7 +85,8 @@ class CTDataModule(pl.LightningDataModule):
 
 
 class NoLabelDataset(VisionDataset):
-    """Used for folder without labels."""
+    """Used for folders without labels."""
+
     def __getitem__(self, index):
         image_files = os.listdir(self.root)
         path_image = os.path.join(self.root, image_files[index])
