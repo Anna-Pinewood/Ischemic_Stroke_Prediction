@@ -4,14 +4,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 from pytorch_lightning.core.module import LightningModule
-from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score, mean_squared_error
+from sklearn.metrics import confusion_matrix, roc_auc_score, mean_squared_error
 # from torchmetrics.classification import BinaryConfusionMatrix
 
 import pandas as pd
 from src.utils import maxpool_output_shape
 
 LOGGER = logging.getLogger()
-# LOGGER.setLevel(logging.DEBUG)
 
 IMG_HEIGHT = 128
 IMG_WIDTH = 98
@@ -181,10 +180,8 @@ class DeepSymNet(LightningModule):
         x, y = batch
         y_hat = self.forward(x)
         roc_auc = roc_auc_score(y, y_hat)
-        f1_metric = f1_score(y, y_hat)
         rmse = np.sqrt(mean_squared_error(y, y_hat))
         self.log('roc_auc', roc_auc)
-        self.log('f1_metric', f1_metric)
         self.log('rmse', rmse)
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
