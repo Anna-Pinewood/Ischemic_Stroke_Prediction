@@ -17,6 +17,7 @@ tensorflow = "^2.10.0"
 seaborn = "^0.12.1"
 sklearn = "^0.0.post1"
 scikit-learn = "^1.1.3"
+torchvision = "^0.14.1"
 
 
 [tool.poetry.group.dev.dependencies]
