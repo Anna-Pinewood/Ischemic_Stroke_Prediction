@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('dataset_path', type=click.Path(exists=True))
-@click.argument('checkpoint', type=click.File('r'))
+@click.argument('checkpoint', type=click.Path(exists=True))
 @click.option('--checkpoints_path', type=click.Path(), default="./lightning_logs/",
               help="Path where trained model will be saved.")  # default_root_dir
 @click.option('--batch_size', type=int, default=32,
