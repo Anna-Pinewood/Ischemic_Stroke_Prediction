@@ -69,7 +69,9 @@ def main(**params):
     trainer = pl.Trainer(default_root_dir=checkpoints_path,
                          max_epochs=max_epochs,
                          callbacks=[early_stop_callback, checkpoint_callback],
-                         log_every_n_steps=20)
+                         log_every_n_steps=20,
+                         accelerator='gpu') #добавила
+                         
     trainer.fit(model, dm)
 
     logger.info("End training.")

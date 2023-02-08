@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('dataset_path', type=click.Path(exists=True))
-@click.argument('checkpoint', type=click.File('r'))
+@click.argument('checkpoint', type=click.Path(exists=True))
 @click.option('--checkpoints_path', type=click.Path(), default="./lightning_logs/",
               help="Path where trained model will be saved.")  # default_root_dir
 @click.option('--batch_size', type=int, default=32,
@@ -30,6 +30,8 @@ logger = logging.getLogger(__name__)
               help="Max training epochs to run.")
 @click.option('--logging_level', type=int, default=logging.WARNING,
               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
+@click.option('--gpu', type=str, default='cpu',
+              help="GPU is True when it is used.")
 def main(**params):
     """Take already trained model and
     continue its training.
@@ -49,6 +51,7 @@ def main(**params):
     max_epochs = params["max_epochs"]
     checkpoints_path = params["checkpoints_path"]
     checkpoint = params["checkpoint"]
+    gpu = params["gpu"]
 
     dm = CTDataModule(data_dir=dataset_path,
                       batch_size=batch_size, num_workers=num_workers)
@@ -67,7 +70,8 @@ def main(**params):
     trainer = pl.Trainer(default_root_dir=checkpoints_path,
                          max_epochs=max_epochs,
                          callbacks=[early_stop_callback, checkpoint_callback],
-                         log_every_n_steps=20)
+                         log_every_n_steps=20,
+                         accelerator=gpu) #добавила
     trainer.fit(model, dm)
 
     logger.info("End futher training.")
