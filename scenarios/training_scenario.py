@@ -36,6 +36,8 @@ logger = logging.getLogger(__name__)
               help="GPU is gpu when it is used.")
 @click.option('--devices', type=int, default='0',
               help="Make sure you are running on a machine with at least 1 GPU")
+@click.option('--learning_rate', type=bool;, default=True,
+              help="")
 def main(**params):
     """Run model training.
     dataset_path is path to dataset with images for training.
@@ -54,6 +56,7 @@ def main(**params):
     checkpoints_path = params["checkpoints_path"]
     gpu = params["gpu"]
     devices = params["devices"]
+    learning_rate = params["learning_rate"]
 
     logger.info("Model will be saved in %s", str(
         os.path.abspath(checkpoints_path)))
@@ -77,7 +80,11 @@ def main(**params):
                          callbacks=[early_stop_callback, checkpoint_callback],
                          log_every_n_steps=20,
                          accelerator=gpu,
-                         devices=devices) 
+                         devices=devices,
+                         auto_lr_find=learning_rate) 
+
+    trainer.tune(model)
+    model.learning_rate
                          
     trainer.fit(model, dm)
 

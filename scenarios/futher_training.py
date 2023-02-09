@@ -32,8 +32,8 @@ logger = logging.getLogger(__name__)
               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
 @click.option('--gpu', type=str, default='cpu',
               help="GPU is gpu when it is used.")
-@click.option('--lr', type=float, default='1e-5',
-              help="Learning rate can be [0,1]")
+@click.option('--learning_rate', type=bool;, default=True,
+              help="")
 @click.option('--devices', type=int, default='0',
               help="Make sure you are running on a machine with at least 1 GPU")
 def main(**params):
@@ -56,7 +56,7 @@ def main(**params):
     checkpoints_path = params["checkpoints_path"]
     checkpoint = params["checkpoint"]
     gpu = params["gpu"]
-    learning_rate = params["lr"]
+    learning_rate = params["learning_rate"]
     devices = params["devices"]
 
     dm = CTDataModule(data_dir=dataset_path,
@@ -72,13 +72,18 @@ def main(**params):
     early_stop_callback = EarlyStopping(
         monitor="val_loss",  min_delta=0.03, patience=patience, mode="min")
 
-    model = DeepSymNet.load_from_checkpoint(checkpoint, learning_rate)
+    model = DeepSymNet.load_from_checkpoint(checkpoint)
     trainer = pl.Trainer(default_root_dir=checkpoints_path,
                          max_epochs=max_epochs,
                          callbacks=[early_stop_callback, checkpoint_callback],
                          log_every_n_steps=20,
                          accelerator=gpu,
-                         devices=devices) 
+                         devices=devices,
+                         auto_lr_find=learning_rate) 
+
+    trainer.tune(model)
+    model.learning_rate
+
     trainer.fit(model, dm)
 
     logger.info("End futher training.")

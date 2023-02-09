@@ -151,7 +151,7 @@ class DeepSymNet(LightningModule):
         LOGGER.debug(f'Output reshaped to {output.shape}')
         return output
 
-    def configure_optimizers(self):
+    def configure_optimizers(self, learning_rate=1e-3):
         optimizer = torch.optim.Adam(self.parameters(), self.learning_rate)
         return optimizer
 
