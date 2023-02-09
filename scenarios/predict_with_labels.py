@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     test_dir = "/home/martinumer/BigData/test_big"
     train_dir = "/home/martinumer/BigData/train_big"
-    checkpoint_path = "/home/martinumer/Ischemic_Stroke_Prediction/models/version_0/checkpoints/epoch=74-step=1500.ckpt"
+    checkpoint_path = "/home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/models/version_0/checkpoints/epoch=74-step=1500.ckpt"
 
     model = DeepSymNet.load_from_checkpoint(checkpoint_path)
     dm_train = CTDataModule(data_dir=test_dir, batch_size=32, num_workers=6)
