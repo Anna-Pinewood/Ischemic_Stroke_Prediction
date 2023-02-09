@@ -208,4 +208,6 @@ class DeepSymNet(LightningModule):
                 best_threshold = threshold
             thresholds.append(threshold)
             scores.append(score)
+
         return best_threshold
+
