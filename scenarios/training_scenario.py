@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
               help="GPU is gpu when it is used.")
 @click.option('--devices', type=int, default='0',
               help="Make sure you are running on a machine with at least 1 GPU")
-@click.option('--learning_rate', type=bool;, default=True,
+@click.option('--learning_rate', type=bool, default=True,
               help="")
 def main(**params):
     """Run model training.

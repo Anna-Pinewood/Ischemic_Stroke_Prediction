@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
 @click.option('--gpu', type=str, default='cpu',
               help="GPU is gpu when it is used.")
-@click.option('--learning_rate', type=bool;, default=True,
+@click.option('--learning_rate', type=bool, default=True,
               help="")
 @click.option('--devices', type=int, default='0',
               help="Make sure you are running on a machine with at least 1 GPU")

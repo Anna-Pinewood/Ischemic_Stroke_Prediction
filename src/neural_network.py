@@ -131,7 +131,7 @@ class DeepSymNet(LightningModule):
             nn.Linear(units_fc, 1)  # units_fc TODO
         )
         self.threshold = None
-        self.learning_rate = learning_rate
+        self.my_learning_rate = lr
 
     def forward(self, x):
         LOGGER.debug(f'Input shape is {x.shape}')
@@ -152,7 +152,7 @@ class DeepSymNet(LightningModule):
         return output
 
     def configure_optimizers(self, learning_rate=1e-3):
-        optimizer = torch.optim.Adam(self.parameters(), self.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
 
     def binary_cross_entropy_loss(self, y_predicted, y_true):
