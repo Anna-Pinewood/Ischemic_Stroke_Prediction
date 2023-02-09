@@ -22,4 +22,6 @@ if __name__ == "__main__":
         labels_preds.y_pred > threshold_best).astype(int)
 
     plot_conf_matrix(labels_preds['y_true'], labels_preds['pred_bin'])
+
     plot_roc_curve(labels_preds['y_pred'], labels_preds['y_true'])
+
