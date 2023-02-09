@@ -15,7 +15,6 @@ from src.image_transforms import crop_image, random_sharpness_or_blur
 
 def crop_black_and_white_loader(path):
     img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-    # arr = cv2.threshold(img, 128, 1, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
     return crop_image(img)
 
 
@@ -43,6 +42,13 @@ class CTDataModule(pl.LightningDataModule):
         ])
 
         self.num_classes = 2
+
+    @property
+    def n_images(self):
+        class_dirs = os.listdir(self.data_dir)
+        n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
+        n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))
+        return n_files_1 + n_files_2
 
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:

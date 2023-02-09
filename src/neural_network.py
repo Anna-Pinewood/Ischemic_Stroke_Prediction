@@ -4,10 +4,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from pytorch_lightning.core.module import LightningModule
-from sklearn.metrics import confusion_matrix, roc_auc_score, mean_squared_error
-# from torchmetrics.classification import BinaryConfusionMatrix
+from sklearn.metrics import f1_score, roc_auc_score, mean_squared_error
 
-import pandas as pd
 from src.utils import maxpool_output_shape
 
 LOGGER = logging.getLogger()
@@ -101,7 +99,6 @@ class SiameseAndDifferenceBlock(nn.Module):
             Whether to return left part of brain or not.
         width: int
             The width of the images along which the split is made.
-
         Returns
         -------
         torch.Tensor
@@ -112,7 +109,7 @@ class SiameseAndDifferenceBlock(nn.Module):
 
 
 class DeepSymNet(LightningModule):
-    def __init__(self):
+    def __init__(self, lr=1e-5):
         super().__init__()
 
         self.siamese_part = SiameseAndDifferenceBlock()
@@ -131,7 +128,7 @@ class DeepSymNet(LightningModule):
             nn.Linear(units_fc, 1)  # units_fc TODO
         )
         self.threshold = None
-        #self.lr = lr
+        self.my_learning_rate = lr
 
     def forward(self, x):
         LOGGER.debug(f'Input shape is {x.shape}')
@@ -152,7 +149,7 @@ class DeepSymNet(LightningModule):
         return output
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-5)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.my_learning_rate)
         return optimizer
 
     def binary_cross_entropy_loss(self, y_predicted, y_true):
@@ -180,35 +177,35 @@ class DeepSymNet(LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        roc_auc = roc_auc_score(y, y_hat)
-        rmse = np.sqrt(mean_squared_error(y, y_hat))
+        if len(torch.unique(y)) < 2:
+            LOGGER.warning('Only one class present in y_true.'
+                           'ROC AUC score is not defined in that case.')
+            roc_auc = -1
+        else:
+            roc_auc = roc_auc_score(y, y_hat.detach().numpy())
+        rmse = np.sqrt(mean_squared_error(y, y_hat.detach().numpy()))
         self.log('roc_auc', roc_auc)
         self.log('rmse', rmse)
+        return {"roc_auc":  roc_auc, "rmse": rmse,
+                "y_true": y, "y_pred": y_hat}
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         x, y = batch
         y_hat = self.forward(x)
-        return y_hat
+        return {'logits': y, 'labels': y_hat}
 
     @staticmethod
     def find_threshold(y_predicted, y_true):
         scores = []
         thresholds = []
         best_score = -1
-        best_i = -1
-        for i in np.linspace(0, 1, 100):
-            prediction_binary = (y_predicted > i).int()
-            score = f1_score(y_true, prediction_binary)
+        best_threshold = -1
+        for threshold in np.linspace(0, 1, 100):
+            prediction_binary = (y_predicted > threshold).astype(int)
+            score = f1_score(y_true, prediction_binary, average='weighted')
             if score > best_score:
                 best_score = score
-                best_i = i
-            thresholds.append(i)
+                best_threshold = threshold
+            thresholds.append(threshold)
             scores.append(score)
-        return best_i
-
-    # def predict_step(self, batch, batch_idx, dataloader_idx=0):
-    #     x, y = batch
-    #     y_hat = self.forward(x)
-    #     return y_hat
-
-# ПОДБОР ПОРОГА!
+        return best_threshold

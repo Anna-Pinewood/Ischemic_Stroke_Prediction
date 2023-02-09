@@ -30,12 +30,11 @@ logger = logging.getLogger(__name__)
               help="Max training epochs to run.")
 @click.option('--logging_level', type=int, default=logging.WARNING,
               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
-@click.option('--gpu', type=str, default='cpu',
+@click.option('--gpu', type=bool, default=False,
               help="GPU is gpu when it is used.")
-@click.option('--learning_rate', type=bool, default=True,
-              help="")
-@click.option('--devices', type=int, default='0',
-              help="Make sure you are running on a machine with at least 1 GPU")
+@click.option('--auto_tune_learning_rate', type=bool, default=True,
+              help="Use True if you want your learning_rate to be auto tuned ")
+
 def main(**params):
     """Take already trained model and
     continue its training.
@@ -56,8 +55,8 @@ def main(**params):
     checkpoints_path = params["checkpoints_path"]
     checkpoint = params["checkpoint"]
     gpu = params["gpu"]
-    learning_rate = params["learning_rate"]
-    devices = params["devices"]
+    learning_rate = params["auto_tune_learning_rate"]
+
 
     dm = CTDataModule(data_dir=dataset_path,
                       batch_size=batch_size, num_workers=num_workers)
@@ -77,12 +76,15 @@ def main(**params):
                          max_epochs=max_epochs,
                          callbacks=[early_stop_callback, checkpoint_callback],
                          log_every_n_steps=20,
-                         accelerator=gpu,
-                         devices=devices,
+                         accelerator='gpu' if gpu == True else 'cpu',
+                         devices=-1 if gpu == True else None,
                          auto_lr_find=learning_rate) 
 
-    trainer.tune(model)
-    model.learning_rate
+    #lr_finder = trainer.tuner.lr_find(model)
+    
+    #trainer.tune(model)
+    #model.hparams.learning_rate = lr_finder.suggestion()
+    #model.lr
 
     trainer.fit(model, dm)
 
