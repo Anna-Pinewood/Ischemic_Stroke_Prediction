@@ -13,8 +13,7 @@ if __name__ == "__main__":
     checkpoint_path = "/home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/models/version_0/checkpoints/epoch=74-step=1500.ckpt"
 
     model = DeepSymNet.load_from_checkpoint(checkpoint_path)
-    model.eval()  # ?
 
     dm = CTDataModule(data_dir=test_dir, batch_size=32, num_workers=6)
-    trainer = pl.Trainer()
+    trainer = pl.Trainer(deterministic=True)
     print(trainer.test(model=model, datamodule=dm))

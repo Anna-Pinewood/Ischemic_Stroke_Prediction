@@ -20,7 +20,7 @@ if __name__ == "__main__":
     model.eval()
 
     dm_train = CTDataModule(data_dir=test_dir, batch_size=32,
-                            num_workers=6, test_shufle=False)
+                            num_workers=6)
 
     labels_preds = get_test_predictions(dm_predict=dm_train,
                                         model=model)
@@ -34,3 +34,5 @@ if __name__ == "__main__":
 
     plot_conf_matrix(labels_preds['y_true'], labels_preds['pred_bin'])
     plot_roc_curve(labels_preds['y_pred_proba'], labels_preds['y_true'])
+
+# %%
