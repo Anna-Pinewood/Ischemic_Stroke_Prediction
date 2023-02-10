@@ -158,7 +158,7 @@ class DeepSymNet(LightningModule):
         return output
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), learning_rate=self.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
 
     def binary_cross_entropy_loss(self, y_predicted, y_true):

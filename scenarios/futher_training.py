@@ -80,10 +80,11 @@ def main(**params):
                          devices=-1 if gpu == True else None,
                          auto_lr_find=learning_rate) 
 
-    lr_finder = trainer.tuner.lr_find(model)
+    lr_finder = trainer.tuner.lr_find(model, dm, early_stop_threshold=None)
     
-    trainer.tune(model)
+    trainer.tune(model, dm)
     model.hparams.learning_rate = lr_finder.suggestion()
+    print('lr_finder.suggestion: ', lr_finder.suggestion())
     model.learning_rate
 
     trainer.fit(model, dm)

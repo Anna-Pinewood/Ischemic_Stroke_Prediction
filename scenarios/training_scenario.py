@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
 @click.option('--gpu', type=bool, default=False,
               help="GPU is gpu when it is used.")
-@click.option('--auto_tune_learning_rate', type=bool, default=True,
+@click.option('--auto_tune_learning_rate', type=bool, default=False,
               help="Use True if you want your learning_rate to be auto tuned ")
 def main(**params):
     """Run model training.
@@ -80,11 +80,12 @@ def main(**params):
                          devices=-1 if gpu == True else None,
                          auto_lr_find=learning_rate) 
 
-    #lr_finder = trainer.tuner.lr_find(model)
+    lr_finder = trainer.tuner.lr_find(model, dm, early_stop_threshold=None)
     
-    #trainer.tune(model)
-    #model.hparams.learning_rate = lr_finder.suggestion()
-    #model.lr
+    trainer.tune(model, dm)
+    model.hparams.learning_rate = lr_finder.suggestion()
+    print('lr_finder.suggestion: ', lr_finder.suggestion())
+    model.learning_rate
                          
     trainer.fit(model, dm)
 
