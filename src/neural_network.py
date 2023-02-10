@@ -1,4 +1,5 @@
 import logging
+from typing import Callable
 
 import numpy as np
 import torch
@@ -195,14 +196,15 @@ class DeepSymNet(LightningModule):
         return {'logits': y, 'labels': y_hat}
 
     @staticmethod
-    def find_threshold(y_predicted, y_true):
+    def find_threshold(y_predicted, y_true,
+                       metric: Callable = f1_score, **kwargs):
         scores = []
         thresholds = []
         best_score = -1
         best_threshold = -1
         for threshold in np.linspace(0, 1, 100):
             prediction_binary = (y_predicted > threshold).astype(int)
-            score = f1_score(y_true, prediction_binary, average='weighted')
+            score = metric.__call__(y_true, prediction_binary, **kwargs)
             if score > best_score:
                 best_score = score
                 best_threshold = threshold

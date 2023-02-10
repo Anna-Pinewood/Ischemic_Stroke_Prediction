@@ -1,6 +1,8 @@
 # Ischemic_Stroke_Prediction
 Predicting, whether patient has Ischemic Stroke from brain CT images.
 
+If your machine doesn't have gpu, use env files from folder 'poetry_no_gpu'.
+
 - Run this command to start train new model.
 ```bash
 poetry run python scenarios/training_scenario.py dataset_folder

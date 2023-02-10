@@ -26,15 +26,16 @@ def get_test_predictions(dm_predict: CTDataModule,
     y_true_all = np.array([])
     y_pred_all = np.array([])
 
+    dataloader_iter = iter(dataloader)
     for i in tqdm(range(n_batches)):
-        batch = next(iter(dataloader))
+        batch = next(dataloader_iter)
         test_step_output = model.test_step(batch, i)
         y_true = test_step_output['y_true'].numpy()
         y_pred = test_step_output['y_pred'].detach().numpy()
         y_true_all = np.append(y_true_all, y_true)
         y_pred_all = np.append(y_pred_all, y_pred)
 
-    result = pd.DataFrame({'y_true': y_true_all, 'y_pred': y_pred_all})
+    result = pd.DataFrame({'y_true': y_true_all, 'y_pred_proba': y_pred_all})
 
     return result
 

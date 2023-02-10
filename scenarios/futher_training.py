@@ -15,21 +15,22 @@ logger = logging.getLogger(__name__)
 @click.command()
 @click.argument('dataset_path', type=click.Path(exists=True))
 @click.argument('checkpoint', type=click.Path(exists=True))
-@click.option('--checkpoints_path', type=click.Path(), default="./lightning_logs/",
-              help="Path where trained model will be saved.")  # default_root_dir
-@click.option('--batch_size', type=int, default=32,
-              help="Batch size in a datamodule.")
-@click.option('--num_workers', type=int, default=6,
-              help="Num of workers in a datamodule.")
-@click.option('--callback_patience', type=int, default=30,
-              help=("Number of epochs with no improvement"
-                    "after which training will be stopped"))
-@click.option('--save_top_k', type=int, default=2,
-              help="How many best models will be saved.")
-@click.option('--max_epochs', type=int, default=100,
-              help="Max training epochs to run.")
-@click.option('--logging_level', type=int, default=logging.WARNING,
-              help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
+@click.option('--checkpoints_path', type=click.Path(), default=".",
+              help=("Path where trained model will be saved. 'lightning_logs folder"
+              " well be created in this path."))
+@ click.option('--batch_size', type=int, default=32,
+               help="Batch size in a datamodule.")
+@ click.option('--num_workers', type=int, default=6,
+               help="Num of workers in a datamodule.")
+@ click.option('--callback_patience', type=int, default=30,
+               help=("Number of epochs with no improvement"
+                     "after which training will be stopped"))
+@ click.option('--save_top_k', type=int, default=2,
+               help="How many best models will be saved.")
+@ click.option('--max_epochs', type=int, default=100,
+               help="Max training epochs to run.")
+@ click.option('--logging_level', type=int, default=logging.WARNING,
+               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
 def main(**params):
     """Take already trained model and
     continue its training.
