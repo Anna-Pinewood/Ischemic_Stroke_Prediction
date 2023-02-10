@@ -1,5 +1,6 @@
+import random
 from typing import Tuple
-
+import os
 import pandas as pd
 import seaborn as sns
 import numpy as np
@@ -28,8 +29,10 @@ def maxpool_output_shape(input_size: Tuple[int, int],
         dilation = (dilation, dilation)
     if not isinstance(stride, tuple):
         stride = (stride, stride)
-    height_new = floor((height + 2 * padding[0] - dilation[0] * (kernel_size[0] - 1) - 1) / stride[0] + 1)
-    width_new = floor((width + 2 * padding[1] - dilation[1] * (kernel_size[1] - 1) - 1) / stride[1] + 1)
+    height_new = floor(
+        (height + 2 * padding[0] - dilation[0] * (kernel_size[0] - 1) - 1) / stride[0] + 1)
+    width_new = floor(
+        (width + 2 * padding[1] - dilation[1] * (kernel_size[1] - 1) - 1) / stride[1] + 1)
     return height_new, width_new
 
 
@@ -47,7 +50,8 @@ def plot_conf_matr(y_true, y_pred, nsamples: int, title: str = ''):
     fb_weighted = fbeta_score(y_true, y_pred, beta=1.1, average='weighted')
     sns.heatmap(matr_new, annot=True, fmt='.3', cmap='Blues')
 
-    plt.title(f'f_beta_weighted={fb_weighted:.3}, \n {nsamples} сэмплов. {title}')
+    plt.title(
+        f'f_beta_weighted={fb_weighted:.3}, \n {nsamples} сэмплов. {title}')
     plt.ylabel('Expert')
     plt.xlabel('Prediction')
 
@@ -56,3 +60,13 @@ def show_tensor(tensor_img: torch.Tensor):
     img_norm = tensor_img.permute(1, 2, 0)[:, :, 0].detach().numpy()
     plt.imshow(img_norm, cmap='gray')
     plt.show()
+
+
+def seed_everything(seed: int):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False

@@ -27,6 +27,7 @@ class CTDataModule(pl.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
+        # self.test_shufle = test_shufle
 
         self.train_transform = transforms.Compose([
             transforms.RandomVerticalFlip(p=0.5),
@@ -87,7 +88,11 @@ class CTDataModule(pl.LightningDataModule):
                                            num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
+        return torch.utils.data.DataLoader(self.dataset,
+                                           batch_size=self.batch_size,
+                                           num_workers=self.num_workers,
+                                           shuffle=True
+                                           )
 
 
 class NoLabelDataset(VisionDataset):

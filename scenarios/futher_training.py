@@ -82,7 +82,7 @@ def main(**params):
 
     lr_finder = trainer.tuner.lr_find(model)
     
-    #trainer.tune(model)
+    trainer.tune(model)
     model.hparams.learning_rate = lr_finder.suggestion()
     model.learning_rate
 

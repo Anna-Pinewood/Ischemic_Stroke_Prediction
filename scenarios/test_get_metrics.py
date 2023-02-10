@@ -1,15 +1,20 @@
 """Get metrics."""
+import pytorch_lightning as pl
 from src.neural_network import DeepSymNet
 from src.CTDataModule import CTDataModule
+from src.utils import seed_everything
 
-import pytorch_lightning as pl
+seed_everything(42)
+
 
 if __name__ == "__main__":
 
     test_dir = "/home/martinumer/BigData/test_big"
-    checkpoint_path = "/home/martinumer/Ischemic_Stroke_Prediction/lightning_logs/version_16/checkpoints/epoch=54-step=1155.ckpt"
+    checkpoint_path = "/home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/models/version_0/checkpoints/epoch=74-step=1500.ckpt"
 
     model = DeepSymNet.load_from_checkpoint(checkpoint_path)
+    model.eval()  # ?
+
     dm = CTDataModule(data_dir=test_dir, batch_size=32, num_workers=6)
     trainer = pl.Trainer()
     print(trainer.test(model=model, datamodule=dm))
