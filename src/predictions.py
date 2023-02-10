@@ -62,4 +62,7 @@ def plot_roc_curve(y_pred_proba, y_true):
     plt.title(f'roc_auc = {roc_auc_metric}')
     plt.ylabel('True Positive Rate')
     plt.xlabel('False Positive Rate')
+
     plt.show()
+
+
