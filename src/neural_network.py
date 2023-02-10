@@ -109,7 +109,15 @@ class SiameseAndDifferenceBlock(nn.Module):
 
 
 class DeepSymNet(LightningModule):
-    def __init__(self, lr=1e-5):
+    def __init__(self, learning_rate: float = 1e-5):
+        """
+        Initialize the model with specific learning rate.
+        Parameters
+        ----------
+        learning_rate: float
+            Argument of torch.optim.Adam of configure_optimizers()
+            torch.optim.Adam(self.parameters(), learning_rate=self.learning_rate)
+        """
         super().__init__()
 
         self.siamese_part = SiameseAndDifferenceBlock()
@@ -128,7 +136,7 @@ class DeepSymNet(LightningModule):
             nn.Linear(units_fc, 1)  # units_fc TODO
         )
         self.threshold = None
-        self.my_learning_rate = lr
+        self.learning_rate = learning_rate
 
     def forward(self, x):
         LOGGER.debug(f'Input shape is {x.shape}')
@@ -149,7 +157,7 @@ class DeepSymNet(LightningModule):
         return output
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.my_learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), learning_rate=self.learning_rate)
         return optimizer
 
     def binary_cross_entropy_loss(self, y_predicted, y_true):
