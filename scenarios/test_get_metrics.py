@@ -9,11 +9,10 @@ seed_everything(42)
 
 if __name__ == "__main__":
 
-    test_dir = "/home/martinumer/BigData/test_big"
-    checkpoint_path = "/home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/models/version_0/checkpoints/epoch=74-step=1500.ckpt"
+    test_dir = "/home/martinumer/HemorrData/hemorr_test"
+    checkpoint_path = "/home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/lightning_logs/hemor_adam/checkpoints/last.ckpt"
 
     model = DeepSymNet.load_from_checkpoint(checkpoint_path)
-
     dm = CTDataModule(data_dir=test_dir, batch_size=32, num_workers=6)
-    trainer = pl.Trainer(deterministic=True)
+    trainer = pl.Trainer(deterministic=True, logger=False)
     print(trainer.test(model=model, datamodule=dm))

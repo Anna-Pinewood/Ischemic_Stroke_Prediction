@@ -15,31 +15,43 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('dataset_path', type=click.Path(exists=True))
-@click.option('--checkpoints_path', type=click.Path(), default=".",
+@click.option('--checkpoints-path', type=click.Path(), default=".",
               help=("Path where trained model will be saved."
                     "It selected path a folder /lightning_logs/"
                     "will be created and models will be inside."))
-@click.option('--batch_size', type=int, default=32,
+@click.option('--batch-size', type=int, default=32,
               help="Batch size in a datamodule.")
-@click.option('--num_workers', type=int, default=6,
+@click.option('--num-workers', type=int, default=6,
               help="Num of workers in a datamodule.")
-@click.option('--callback_patience', type=int, default=30,
+@click.option('--callback-patience', type=int, default=30,
               help=("Number of epochs with no improvement"
                     "after which training will be stopped"))
-@click.option('--save_top_k', type=int, default=2,
+@click.option('--save-top-k', type=int, default=2,
               help="How many best models will be saved.")
-@click.option('--max_epochs', type=int, default=100,
+@click.option('--max-epochs', type=int, default=100,
               help="Max training epochs to run.")
-@click.option('--logging_level', type=int, default=logging.WARNING,
+@click.option('--optimizer-name', type=str, default='adam',
+              help="'adam' or 'adamax'")
+@click.option('--version-name', type=str, default=None,
+              help=("Name of study in 'checkpoints_path/lightning_logs/'"
+                    "By default it is varsion_{$num}."))
+@click.option('--logging-level', type=int, default=logging.WARNING,
               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
 def main(**params):
     """Run model training.
     dataset_path is path to dataset with images for training.
     """
     logging.basicConfig(level=params["logging_level"])
+    script_params = {'dataset_path', 'checkpoints_path', 'logging_level'}
+    trainig_params = sorted(list(set(params.keys()) - script_params))
+
     logger.info("Script params are:")
-    for param_name, value in params.items():
-        logger.info("%s=%s", param_name, str(value))
+    for param_name in list(script_params):
+        logger.info("|  %s=%s", param_name, str(params[param_name]))
+
+    logger.info("Training params are:")
+    for param_name in trainig_params:
+        logger.info("|  %s=%s", param_name, str(params[param_name]))
 
     dataset_path = params["dataset_path"]
     batch_size = params["batch_size"]
@@ -47,10 +59,21 @@ def main(**params):
     save_top_k = params["save_top_k"]
     patience = params["callback_patience"]
     max_epochs = params["max_epochs"]
+    optimizer_name = params["optimizer_name"]
     checkpoints_path = params["checkpoints_path"]
+    version_name = params["version_name"]
 
-    logger.info("Model will be saved in %s", str(
-        os.path.abspath(checkpoints_path)))
+    abs_path_checkpoints = os.path.abspath(checkpoints_path)
+    path_model = os.path.join(abs_path_checkpoints, "lightning_logs")
+
+    if version_name is None:
+        version_dirs = [f for f in os.listdir(
+            path_model) if f.startswith('version_')]
+        last_version = max([int(file.split('_')[1]) for file in version_dirs])
+        version_name = f"version_{last_version+1}"
+
+    logger.info("Model will be saved in %s",
+                os.path.join(path_model, version_name))
 
     dm = CTDataModule(data_dir=dataset_path,
                       batch_size=batch_size, num_workers=num_workers)
@@ -65,11 +88,18 @@ def main(**params):
     early_stop_callback = EarlyStopping(
         monitor="val_loss",  min_delta=0.03, patience=patience, mode="min")
 
-    model = DeepSymNet()
+    tb_logger = pl.loggers.TensorBoardLogger(save_dir=checkpoints_path,
+                                             version=version_name)
+
+    model = DeepSymNet(optimizer_name=optimizer_name)
     trainer = pl.Trainer(default_root_dir=checkpoints_path,
+                         logger=tb_logger,
                          max_epochs=max_epochs,
                          callbacks=[early_stop_callback, checkpoint_callback],
-                         log_every_n_steps=20)
+                         log_every_n_steps=20,
+                         accelerator='gpu',
+                         devices=-1
+                         )
     trainer.fit(model, dm)
 
     logger.info("End training.")
