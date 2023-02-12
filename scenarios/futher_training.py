@@ -92,7 +92,7 @@ def main(**params):
     else:  
         model.learning_rate = lr
     
-    logger.info('lr_finder.suggestion: ', str(model.learning_rate))
+    logger.info('Learning rate: ', str(model.learning_rate))
 
     trainer.fit(model, dm)
 
