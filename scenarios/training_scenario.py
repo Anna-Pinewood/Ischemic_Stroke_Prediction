@@ -41,6 +41,9 @@ logger = logging.getLogger(__name__)
               help="GPU is gpu when it is used.")
 @click.option('--auto_tune_learning_rate', type=bool, default=False,
               help="Use True if you want your learning_rate to be auto tuned ")
+@click.option('--learning_rate', type=float, default=1e-5,
+              help="If you do not use auto tune learning rate set your own lr in a model")
+
 def main(**params):
     """Run model training.
     dataset_path is path to dataset with images for training.
@@ -67,6 +70,7 @@ def main(**params):
     checkpoints_path = params["checkpoints_path"]
     gpu = params["gpu"]
     learning_rate = params["auto_tune_learning_rate"]
+    lr = params['learning_rate']
     version_name = params["version_name"]
 
     abs_path_checkpoints = os.path.abspath(checkpoints_path)
@@ -107,13 +111,17 @@ def main(**params):
                          devices=-1 if gpu == True else None,
                          auto_lr_find=learning_rate) 
 
-    lr_finder = trainer.tuner.lr_find(model, dm, early_stop_threshold=None)
+    if trainer.auto_lr_find:
+        lr_finder = trainer.tuner.lr_find(model, dm, early_stop_threshold=None)
+        
+        trainer.tune(model, dm)
+        model.learning_rate = lr_finder.suggestion()
+
+    else:  
+        model.learning_rate = lr
     
-    trainer.tune(model, dm)
-    model.hparams.learning_rate = lr_finder.suggestion()
-    print('lr_finder.suggestion: ', lr_finder.suggestion())
-    model.learning_rate
-                         
+    logger.info('lr_finder.suggestion: ', str(model.learning_rate))
+    
     trainer.fit(model, dm)
 
     logger.info("End training.")
