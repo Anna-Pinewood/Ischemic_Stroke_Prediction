@@ -37,6 +37,13 @@ logger = logging.getLogger(__name__)
                     "By default it is varsion_{$num}."))
 @click.option('--logging-level', type=int, default=logging.WARNING,
               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
+@click.option('--gpu', type=bool, default=False,
+              help="GPU is gpu when it is used.")
+@click.option('--auto_tune_learning_rate', type=bool, default=False,
+              help="Use True if you want your learning_rate to be auto tuned ")
+@click.option('--learning_rate', type=float, default=1e-5,
+              help="If you do not use auto tune learning rate set your own lr in a model")
+
 def main(**params):
     """Run model training.
     dataset_path is path to dataset with images for training.
@@ -61,6 +68,9 @@ def main(**params):
     max_epochs = params["max_epochs"]
     optimizer_name = params["optimizer_name"]
     checkpoints_path = params["checkpoints_path"]
+    gpu = params["gpu"]
+    learning_rate = params["auto_tune_learning_rate"]
+    lr = params['learning_rate']
     version_name = params["version_name"]
 
     abs_path_checkpoints = os.path.abspath(checkpoints_path)
@@ -97,9 +107,21 @@ def main(**params):
                          max_epochs=max_epochs,
                          callbacks=[early_stop_callback, checkpoint_callback],
                          log_every_n_steps=20,
-                         accelerator='gpu',
-                         devices=-1
-                         )
+                         accelerator='gpu' if gpu == True else 'cpu',
+                         devices=-1 if gpu == True else None,
+                         auto_lr_find=learning_rate) 
+
+    if trainer.auto_lr_find:
+        lr_finder = trainer.tuner.lr_find(model, dm, early_stop_threshold=None)
+        
+        trainer.tune(model, dm)
+        model.learning_rate = lr_finder.suggestion()
+
+    else:  
+        model.learning_rate = lr
+    
+    logger.info('Learning rate: ', str(model.learning_rate))
+    
     trainer.fit(model, dm)
 
     logger.info("End training.")
