@@ -56,7 +56,7 @@ def plot_conf_matrix(y_true: pd.Series,
 
 
 def plot_roc_curve(y_pred_proba, y_true):
-    roc_auc_metric = roc_auc_score(y_true, y_pred_proba)
+    roc_auc_metric = round(roc_auc_score(y_true, y_pred_proba), 4)
     fpr, tpr, _ = roc_curve(y_true,  y_pred_proba)
 
     plt.plot(fpr, tpr)

@@ -39,11 +39,11 @@ logger = logging.getLogger(__name__)
               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
 @click.option('--gpu', type=bool, default=False,
               help="GPU is gpu when it is used.")
-@click.option('--auto_tune_learning_rate', type=bool, default=False,
+@click.option('--auto-tune-learning-rate', type=bool, default=False,
               help="Use True if you want your learning_rate to be auto tuned ")
-@click.option('--learning_rate', type=float, default=1e-5,
-              help="If you do not use auto tune learning rate set your own lr in a model")
-
+@click.option('--learning-rate', type=float, default=None,
+              help=("If you do not use auto tune learning rate set your own lr in a model."
+                    "Else it would be set to default model value."))
 def main(**params):
     """Run model training.
     dataset_path is path to dataset with images for training.
@@ -109,19 +109,19 @@ def main(**params):
                          log_every_n_steps=20,
                          accelerator='gpu' if gpu == True else 'cpu',
                          devices=-1 if gpu == True else None,
-                         auto_lr_find=learning_rate) 
+                         auto_lr_find=learning_rate)
 
     if trainer.auto_lr_find:
         lr_finder = trainer.tuner.lr_find(model, dm, early_stop_threshold=None)
-        
+
         trainer.tune(model, dm)
         model.learning_rate = lr_finder.suggestion()
 
-    else:  
+    else:
         model.learning_rate = lr
-    
+
     logger.info('Learning rate: ', str(model.learning_rate))
-    
+
     trainer.fit(model, dm)
 
     logger.info("End training.")
