@@ -9,8 +9,9 @@ seed_everything(42)
 
 if __name__ == "__main__":
 
-    test_dir = "/home/martinumer/HemorrData/hemorr_test"
-    checkpoint_path = "/home/martinumer/Ischemic_Stroke_Prediction/lightning_logs/version_16/checkpoints/epoch=54-step=1155.ckpt"
+    test_dir = "/home/martinumer/BigData/test_big"
+    checkpoint_path = "/home/martinumer/Ischemic_Stroke_Prediction/lightning_logs/version_28/checkpoints/last.ckpt"
+    
 
     model = DeepSymNet.load_from_checkpoint(checkpoint_path)
     dm = CTDataModule(data_dir=test_dir, batch_size=32, num_workers=6)
