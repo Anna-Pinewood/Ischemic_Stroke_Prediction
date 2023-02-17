@@ -21,7 +21,7 @@ def crop_black_and_white_loader(path):
 class CTDataModule(pl.LightningDataModule):
     def __init__(self,
                  data_dir: str,
-                 batch_size: int = 4,
+                 batch_size: int = 32,
                  num_workers: int = 0):
         super().__init__()
         self.data_dir = data_dir

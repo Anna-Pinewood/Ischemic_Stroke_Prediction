@@ -3,6 +3,7 @@ import logging
 import os
 
 import click
+from matplotlib import pyplot as plt
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
@@ -23,27 +24,29 @@ logger = logging.getLogger(__name__)
               help="Batch size in a datamodule.")
 @click.option('--num-workers', type=int, default=6,
               help="Num of workers in a datamodule.")
-@click.option('--callback-patience', type=int, default=30,
+@click.option('--callback-patience', type=int, default=50,
               help=("Number of epochs with no improvement"
                     "after which training will be stopped"))
 @click.option('--save-top-k', type=int, default=2,
               help="How many best models will be saved.")
 @click.option('--max-epochs', type=int, default=100,
               help="Max training epochs to run.")
+@click.option('--min-epochs', type=int, default=None,
+              help="Min training epochs to run.")
 @click.option('--optimizer-name', type=str, default='adam',
               help="'adam' or 'adamax'")
 @click.option('--version-name', type=str, default=None,
-              help=("Name of study in 'checkpoints_path/lightning_logs/'"
-                    "By default it is varsion_{$num}."))
+              help=("Name of study folder in 'checkpoints_path/lightning_logs/'"
+                    "By default it is version_{$num}."))
 @click.option('--logging-level', type=int, default=logging.WARNING,
               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
 @click.option('--gpu', type=bool, default=False,
               help="GPU is gpu when it is used.")
-@click.option('--auto_tune_learning_rate', type=bool, default=False,
+@click.option('--auto-tune-learning-rate', type=bool, default=False,
               help="Use True if you want your learning_rate to be auto tuned ")
-@click.option('--learning_rate', type=float, default=1e-5,
-              help="If you do not use auto tune learning rate set your own lr in a model")
-
+@click.option('--learning-rate', type=float, default=None,
+              help=("If you do not use auto tune learning rate set your own lr in a model."
+                    "Else it would be set to default model value."))
 def main(**params):
     """Run model training.
     dataset_path is path to dataset with images for training.
@@ -66,11 +69,12 @@ def main(**params):
     save_top_k = params["save_top_k"]
     patience = params["callback_patience"]
     max_epochs = params["max_epochs"]
+    min_epochs = params["min_epochs"]
     optimizer_name = params["optimizer_name"]
     checkpoints_path = params["checkpoints_path"]
     gpu = params["gpu"]
-    learning_rate = params["auto_tune_learning_rate"]
-    lr = params['learning_rate']
+    learning_rate = params["learning_rate"]
+    auto_lr_find = params["auto_tune_learning_rate"]
     version_name = params["version_name"]
 
     abs_path_checkpoints = os.path.abspath(checkpoints_path)
@@ -104,24 +108,25 @@ def main(**params):
     model = DeepSymNet(optimizer_name=optimizer_name)
     trainer = pl.Trainer(default_root_dir=checkpoints_path,
                          logger=tb_logger,
+                         min_epochs=min_epochs,
                          max_epochs=max_epochs,
                          callbacks=[early_stop_callback, checkpoint_callback],
                          log_every_n_steps=20,
                          accelerator='gpu' if gpu == True else 'cpu',
                          devices=-1 if gpu == True else None,
-                         auto_lr_find=learning_rate) 
+                         auto_lr_find=auto_lr_find)
 
     if trainer.auto_lr_find:
         lr_finder = trainer.tuner.lr_find(model, dm, early_stop_threshold=None)
-        
-        trainer.tune(model, dm)
+
+        # trainer.tune(model, dm)
         model.learning_rate = lr_finder.suggestion()
 
-    else:  
-        model.learning_rate = lr
-    
-    logger.info('Learning rate: ', str(model.learning_rate))
-    
+    elif learning_rate is not None:
+        model.learning_rate = learning_rate
+
+    logger.info('Learning rate: %s', str(model.learning_rate))
+
     trainer.fit(model, dm)
 
     logger.info("End training.")

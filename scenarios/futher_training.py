@@ -15,29 +15,27 @@ logger = logging.getLogger(__name__)
 @click.command()
 @click.argument('dataset_path', type=click.Path(exists=True))
 @click.argument('checkpoint', type=click.Path(exists=True))
-@click.option('--checkpoints_path', type=click.Path(), default="./lightning_logs/",
+@click.option('--checkpoints-path', type=click.Path(), default="./lightning_logs/",
               help="Path where trained model will be saved.")  # default_root_dir
-@click.option('--batch_size', type=int, default=32,
+@click.option('--batch-size', type=int, default=32,
               help="Batch size in a datamodule.")
-@click.option('--num_workers', type=int, default=6,
+@click.option('--num-workers', type=int, default=6,
               help="Num of workers in a datamodule.")
-@click.option('--callback_patience', type=int, default=30,
+@click.option('--callback-patience', type=int, default=30,
               help=("Number of epochs with no improvement"
                     "after which training will be stopped"))
-@click.option('--save_top_k', type=int, default=2,
+@click.option('--save-top-k', type=int, default=2,
               help="How many best models will be saved.")
-@click.option('--max_epochs', type=int, default=100,
+@click.option('--max-epochs', type=int, default=100,
               help="Max training epochs to run.")
-@click.option('--logging_level', type=int, default=logging.WARNING,
+@click.option('--logging-level', type=int, default=logging.WARNING,
               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
 @click.option('--gpu', type=bool, default=False,
               help="GPU is gpu when it is used.")
-@click.option('--auto_tune_learning_rate', type=bool, default=False,
+@click.option('--auto-tune-learning-rate', type=bool, default=False,
               help="Use True if you want your learning_rate to be auto tuned ")
-@click.option('--learning_rate', type=float, default=1e-5,
+@click.option('--learning-rate', type=float, default=1e-5,
               help="If you do not use auto tune learning rate set your own lr in a model")
-
-
 def main(**params):
     """Take already trained model and
     continue its training.
@@ -81,17 +79,17 @@ def main(**params):
                          log_every_n_steps=20,
                          accelerator='gpu' if gpu == True else 'cpu',
                          devices=-1 if gpu == True else None,
-                         auto_lr_find=learning_rate) 
-                         
+                         auto_lr_find=learning_rate)
+
     if trainer.auto_lr_find:
         lr_finder = trainer.tuner.lr_find(model, dm, early_stop_threshold=None)
-        
+
         trainer.tune(model, dm)
         model.learning_rate = lr_finder.suggestion()
 
-    else:  
+    else:
         model.learning_rate = lr
-    
+
     logger.info('Learning rate: ', str(model.learning_rate))
 
     trainer.fit(model, dm)
