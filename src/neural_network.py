@@ -3,6 +3,7 @@ from typing import Callable, Optional
 
 import numpy as np
 import torch
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.nn as nn
 from pytorch_lightning.core.module import LightningModule
 from sklearn.metrics import f1_score, roc_auc_score, mean_squared_error
@@ -122,7 +123,8 @@ class DeepSymNet(LightningModule):
             Options: adam, adamax
         learning_rate: float
             Argument of torch.optim.Adam of configure_optimizers()
-            torch.optim.Adam(self.parameters(), learning_rate=self.learning_rate)
+            torch.optim.Adam(self.parameters(),
+                             learning_rate=self.learning_rate)
 
         """
         super().__init__()
@@ -141,7 +143,7 @@ class DeepSymNet(LightningModule):
         units_fc = height_new * width_new * 256
 
         self.fc1 = nn.Sequential(
-            nn.Linear(units_fc, 1)  # units_fc TODO
+            nn.Linear(units_fc, 1)
         )
         self.threshold = None
         self.learning_rate = learning_rate
@@ -173,7 +175,16 @@ class DeepSymNet(LightningModule):
         elif self.optimizer_name == "adamax":
             optimizer = torch.optim.Adamax(
                 self.parameters(), lr=self.learning_rate)
-        return optimizer
+
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": ReduceLROnPlateau(optimizer, mode='min', patience=15, verbose=True),
+                "monitor": "val_loss",
+                "frequency": 1
+            },
+        }
+        # return optimizer
 
     def binary_cross_entropy_loss(self, y_predicted, y_true):
         y_true = y_true.to(torch.float32)
@@ -217,7 +228,7 @@ class DeepSymNet(LightningModule):
         y_hat = self.forward(x)
         return {'logits': y, 'labels': y_hat}
 
-    @staticmethod
+    @ staticmethod
     def find_threshold(y_predicted, y_true,
                        metric: Callable = f1_score, **kwargs):
         scores = []
