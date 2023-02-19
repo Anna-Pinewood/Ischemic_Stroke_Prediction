@@ -24,6 +24,7 @@ torch = "^1.13.1"
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5.10.1"
+pylint = "^2.16.2"
 
 [build-system]
 requires = ["poetry-core"]

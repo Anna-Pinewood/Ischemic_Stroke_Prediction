@@ -1,9 +1,7 @@
 from math import ceil
 from matplotlib import pyplot as plt
 import numpy as np
-from pyparsing import Optional
 from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve
-import torch
 
 import seaborn as sns
 
@@ -15,8 +13,15 @@ from src.neural_network import DeepSymNet
 
 
 def get_test_predictions(dm_predict: CTDataModule,
-                         model: DeepSymNet):
-    """Get predictions from model test_step."""
+                         model: DeepSymNet) -> pd.DataFrame:
+    """Get predictions from model test_step.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with columns: 'y_true' for labels,
+        'y_pred_proba' for predicted score.
+    """
     dm_predict.setup('test')
     dataloader = dm_predict.test_dataloader()
 
@@ -55,7 +60,10 @@ def plot_conf_matrix(y_true: pd.Series,
     return plot
 
 
-def plot_roc_curve(y_pred_proba, y_true):
+def plot_roc_curve(y_pred_proba: pd.Series,
+                   y_true: pd.Series):
+    """Plot ROC-curve based on passed predicted scores
+    and labels."""
     roc_auc_metric = round(roc_auc_score(y_true, y_pred_proba), 4)
     fpr, tpr, _ = roc_curve(y_true,  y_pred_proba)
 

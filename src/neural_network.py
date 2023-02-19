@@ -1,7 +1,8 @@
 import logging
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import numpy as np
+import pandas as pd
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.nn as nn
@@ -229,8 +230,26 @@ class DeepSymNet(LightningModule):
         return {'logits': y, 'labels': y_hat}
 
     @ staticmethod
-    def find_threshold(y_predicted, y_true,
-                       metric: Callable = f1_score, **kwargs):
+    def find_threshold(y_predicted: Union[pd.Series, np.ndarray],
+                       y_true: Union[pd.Series, np.ndarray],
+                       metric: Callable = f1_score,
+                       **kwargs) -> float:
+        """
+        Find best threshold for classification results
+        based on metric.
+
+        Parameters
+        ----------
+        y_predicted : Union[pd.Series, np.ndarray]
+            Predicted scores.
+        y_true: Union[pd.Series, np.ndarray]
+            Real labels.
+        metric: Callable
+            Metric based om which best thteshold
+            is chosen.
+        **kwargs
+            Additional metric parameters.
+        """
         scores = []
         thresholds = []
         best_score = -1

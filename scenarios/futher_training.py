@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 @click.argument('dataset_path', type=click.Path(exists=True))
 @click.argument('checkpoint', type=click.Path(exists=True))
 @click.option('--checkpoints-path', type=click.Path(), default="./lightning_logs/",
-              help="Path where trained model will be saved.")  # default_root_dir
+              help="Path where trained model will be saved.")
 @click.option('--batch-size', type=int, default=32,
               help="Batch size in a datamodule.")
 @click.option('--num-workers', type=int, default=6,
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
               help="Use True if you want your learning_rate to be auto tuned ")
 @click.option('--learning-rate', type=float, default=1e-5,
               help="If you do not use auto tune learning rate set your own lr in a model")
-def main(**params):
+def main(**params):  # pylint: disable=too-many-locals
     """Take already trained model and
     continue its training.
     dataset_path is path to dataset with images for training.
@@ -56,10 +56,10 @@ def main(**params):
     checkpoints_path = params["checkpoints_path"]
     checkpoint = params["checkpoint"]
     gpu = params["gpu"]
-    learning_rate = params["auto_tune_learning_rate"]
-    lr = params['learning_rate']
+    auto_learning_rate = params["auto_tune_learning_rate"]
+    learning_rate = params['learning_rate']
 
-    dm = CTDataModule(data_dir=dataset_path,
+    dm = CTDataModule(data_dir=dataset_path,  # pylint: disable=invalid-name
                       batch_size=batch_size, num_workers=num_workers)
 
     checkpoint_callback = ModelCheckpoint(
@@ -77,9 +77,9 @@ def main(**params):
                          max_epochs=max_epochs,
                          callbacks=[early_stop_callback, checkpoint_callback],
                          log_every_n_steps=20,
-                         accelerator='gpu' if gpu == True else 'cpu',
-                         devices=-1 if gpu == True else None,
-                         auto_lr_find=learning_rate)
+                         accelerator='gpu' if gpu is True else 'cpu',
+                         devices=-1 if gpu is True else None,
+                         auto_lr_find=auto_learning_rate)
 
     if trainer.auto_lr_find:
         lr_finder = trainer.tuner.lr_find(model, dm, early_stop_threshold=None)
@@ -88,9 +88,9 @@ def main(**params):
         model.learning_rate = lr_finder.suggestion()
 
     else:
-        model.learning_rate = lr
+        model.learning_rate = learning_rate
 
-    logger.info('Learning rate: ', str(model.learning_rate))
+    logger.info('Learning rate: %s', str(model.learning_rate))
 
     trainer.fit(model, dm)
 

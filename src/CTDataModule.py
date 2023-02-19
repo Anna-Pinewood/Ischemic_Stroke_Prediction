@@ -1,24 +1,34 @@
+"""Storing and operationg data."""
 import os
+from typing import Optional, Union
 
 import cv2
-import numpy as np
 import pytorch_lightning as pl
 import torch
 from PIL import Image
 from torch.utils.data import random_split
 from torchvision import datasets, transforms
 from torchvision.datasets.vision import VisionDataset
-import random
 
 from src.image_transforms import crop_image, random_sharpness_or_blur
 
 
-def crop_black_and_white_loader(path):
+def crop_black_and_white_loader(path) -> Image:
+    """Read img in black and white, prepare it to be
+    uploaded to datamodule.
+
+    Returns
+    -------
+    PIL.Image.Image
+        Image, ready to be processed by datamodule.
+    """
     img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     return crop_image(img)
 
 
-class CTDataModule(pl.LightningDataModule):
+class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance-attributes
+    """Treat CT brain scans."""
+
     def __init__(self,
                  data_dir: str,
                  batch_size: int = 32,
@@ -44,8 +54,13 @@ class CTDataModule(pl.LightningDataModule):
 
         self.num_classes = 2
 
+        self.dataset: Union[NoLabelDataset, datasets.ImageFolder, None] = None
+        self.data_train:  Optional[datasets.ImageFolder] = None
+        self.data_validation: Optional[datasets.ImageFolder] = None
+
     @property
-    def n_images(self):
+    def n_images(self) -> int:
+        """How many initial images are there in datamodule."""
         class_dirs = os.listdir(self.data_dir)
         n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
         n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))
@@ -53,15 +68,17 @@ class CTDataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
-            self.dataset = datasets.ImageFolder(self.data_dir,
-                                                loader=crop_black_and_white_loader,
-                                                transform=transforms.transforms.Compose([self.base_transform,
-                                                                                         self.train_transform])
-                                                )
+            self.dataset = datasets.ImageFolder(
+                self.data_dir,
+                loader=crop_black_and_white_loader,
+                transform=transforms.transforms.Compose([self.base_transform,
+                                                         self.train_transform])
+            )
 
-            self.data_train, self.data_validation = random_split(self.dataset,
-                                                                 [round(len(self.dataset.samples) * 0.8),
-                                                                  round(len(self.dataset.samples) * 0.2)])
+            self.data_train, self.data_validation = random_split(
+                self.dataset,
+                [round(len(self.dataset.samples) * 0.8),
+                 round(len(self.dataset.samples) * 0.2)])
 
         if stage == 'predict':
             self.dataset = NoLabelDataset(self.data_dir,
