@@ -52,7 +52,7 @@ def main(**params):
     dataset_path = params["dataset_path"]
     version_path = params["version_path"]
     batch_size = params["batch_size"]
-    num_workers = params["batch_size"]
+    num_workers = params["num_workers"]
     gpu = params["gpu"]
 
     checkpoints = get_all_checkpoints(version_path)
