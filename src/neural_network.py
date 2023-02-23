@@ -180,7 +180,7 @@ class DeepSymNet(LightningModule):
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
-                "scheduler": ReduceLROnPlateau(optimizer, mode='min', patience=15, verbose=True),
+                "scheduler": ReduceLROnPlateau(optimizer, mode='min', patience=12, verbose=True),
                 "monitor": "val_loss",
                 "frequency": 1
             },

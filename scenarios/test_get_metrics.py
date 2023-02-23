@@ -53,7 +53,6 @@ def main(**params):
     version_path = params["version_path"]
     batch_size = params["batch_size"]
     num_workers = params["batch_size"]
-    trainer_verbose = params["trainer_verbose"]
     gpu = params["gpu"]
 
     checkpoints = get_all_checkpoints(version_path)
