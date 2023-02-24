@@ -19,7 +19,8 @@ def get_test_predictions(dm_predict: CTDataModule,
     Returns
     -------
     pd.DataFrame
-        DataFrame with columns: 'y_true' for labels,
+        DataFrame with columns: 'image' for image name,
+        'y_true' for labels,
         'y_pred_proba' for predicted score.
     """
     dm_predict.setup('test')
@@ -30,6 +31,7 @@ def get_test_predictions(dm_predict: CTDataModule,
 
     y_true_all = np.array([])
     y_pred_all = np.array([])
+    image_names_labels = []
 
     dataloader_iter = iter(dataloader)
     for i in tqdm(range(n_batches)):
@@ -39,9 +41,14 @@ def get_test_predictions(dm_predict: CTDataModule,
         y_pred = test_step_output['y_pred'].detach().numpy()
         y_true_all = np.append(y_true_all, y_true)
         y_pred_all = np.append(y_pred_all, y_pred)
+        image_names_labels.extend(
+            dataloader.dataset.samples[i*dm_predict.batch_size: (i+1)*dm_predict.batch_size])
 
-    result = pd.DataFrame({'y_true': y_true_all, 'y_pred_proba': y_pred_all})
-
+    image_names = [pair[0] for pair in image_names_labels]
+    result = pd.DataFrame(
+        {'image': image_names, 'y_true': y_true_all, 'y_pred_proba': y_pred_all})
+    result['image'] = result.image.str.split('/').str[-2:].str.join('/')
+    result = result.sort_values('y_pred_proba')
     return result
 
 

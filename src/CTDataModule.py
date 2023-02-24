@@ -32,12 +32,13 @@ class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance
     def __init__(self,
                  data_dir: str,
                  batch_size: int = 32,
-                 num_workers: int = 0):
+                 num_workers: int = 0,
+                 test_shuffle: bool = True):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
-        # self.test_shufle = test_shufle
+        self.test_shuffle = test_shuffle
 
         self.train_transform = transforms.Compose([
             transforms.RandomVerticalFlip(p=0.5),
@@ -108,7 +109,7 @@ class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance
         return torch.utils.data.DataLoader(self.dataset,
                                            batch_size=self.batch_size,
                                            num_workers=self.num_workers,
-                                           shuffle=True
+                                           shuffle=self.test_shuffle
                                            )
 
 
