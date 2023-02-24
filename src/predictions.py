@@ -55,7 +55,7 @@ def plot_conf_matrix(y_true: pd.Series,
 
     plot = sns.heatmap(matrix, annot=True, fmt='.3', cmap='Blues')
     plot.set(xlabel='True', ylabel='Pred')
-    plot.set(title=f'{n_samples} сэмлов')
+    plot.set(title=f'{n_samples} сэмплов')
     plt.show()
     return plot
 
