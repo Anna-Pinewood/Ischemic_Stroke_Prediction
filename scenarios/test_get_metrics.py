@@ -32,8 +32,8 @@ def get_all_checkpoints(checkpoints_path) -> List[str]:
 
 
 if __name__ == "__main__":
-    checkpoint_path = "/home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/lightning_logs/hemor_siam_plus_1"
-    test_dir = "/home/martinumer/HemorrData/hemorr_test"
+    checkpoint_path = "/home/martinumer/Ischemic_Stroke_Prediction/lightning_logs/version_46"
+    test_dir = "/home/martinumer/IschemicData/test"
 
     checkpoints = get_all_checkpoints(checkpoint_path)
     for checkpoint in checkpoints:
