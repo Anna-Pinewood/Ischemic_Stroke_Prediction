@@ -22,11 +22,13 @@ class CTDataModule(pl.LightningDataModule):
     def __init__(self,
                  data_dir: str,
                  batch_size: int = 32,
-                 num_workers: int = 0):
+                 num_workers: int = 0,
+                 throw_out_random: float = 0.):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.throw_out_random = throw_out_random
         # self.test_shufle = test_shufle
 
         self.train_transform = transforms.Compose([
@@ -51,13 +53,48 @@ class CTDataModule(pl.LightningDataModule):
         n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))
         return n_files_1 + n_files_2
 
+    #def choose_images(self):
+    #    for i in range(round(1 - self.throw_out_random * n_images())):
+     #       class_dirs = os.listdir(self.data_dir)
+     #       random_file_1 = random.choice(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
+      #      self.dataset.append(random_file_1)
+       #     random_file_2 = random.choice(os.listdir(os.path.join(self.data_dir, class_dirs[1])))
+        #    self.dataset.append(random_file_2)
+        #return torch.utils.data.DataLoader(self.dataset,
+         #                                  batch_size=self.batch_size,
+          #                                 shuffle=True,
+           #                                num_workers=self.num_workers)    
+            
+        
+
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
+            
+            class_dirs = os.listdir(self.data_dir)
+            n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
+            n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))         
+            n_files = n_files_1 + n_files_2                           
+            len_stay = n_files - self.throw_out_random * n_files
+            half_len =  len_stay // 2              
+                               
+            for i in range(half_len):
+                class_dirs = os.listdir(self.data_dir)
+                random_file_1 = random.choice(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
+                os.listdir(self.dataset).append(random_file_1)
+
+                random_file_2 = random.choice(os.listdir(os.path.join(self.data_dir, class_dirs[1])))
+                os.listdir(self.dataset).append(random_file_2)
+
             self.dataset = datasets.ImageFolder(self.data_dir,
                                                 loader=crop_black_and_white_loader,
                                                 transform=transforms.transforms.Compose([self.base_transform,
                                                                                          self.train_transform])
                                                 )
+                                                
+            
+            #self.dataset, data_extra = random_split(self.dataset,
+            #                                        [round(len(self.dataset) * (1 - self.throw_out_random)),
+            #                                        round(len(self.dataset) * self.throw_out_random)])
 
             self.data_train, self.data_validation = random_split(self.dataset,
                                                                  [round(len(self.dataset.samples) * 0.8),
