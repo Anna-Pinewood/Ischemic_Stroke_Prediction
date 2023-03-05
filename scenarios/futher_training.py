@@ -36,6 +36,9 @@ logger = logging.getLogger(__name__)
               help="Use True if you want your learning_rate to be auto tuned ")
 @click.option('--learning-rate', type=float, default=1e-5,
               help="If you do not use auto tune learning rate set your own lr in a model")
+@click.option('--throw-out-random', type=float, default=0.,
+              help=("Use float value to throw out a part of dataset "
+                    "Else it would be set to default model value."))
 def main(**params):
     """Take already trained model and
     continue its training.
@@ -58,9 +61,12 @@ def main(**params):
     gpu = params["gpu"]
     learning_rate = params["auto_tune_learning_rate"]
     lr = params['learning_rate']
+    throw_out_random = params["throw_out_random"]
 
     dm = CTDataModule(data_dir=dataset_path,
-                      batch_size=batch_size, num_workers=num_workers)
+                      batch_size=batch_size, 
+                      num_workers=num_workers,
+                      throw_out_random=throw_out_random)
 
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
