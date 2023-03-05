@@ -51,54 +51,29 @@ class CTDataModule(pl.LightningDataModule):
         class_dirs = os.listdir(self.data_dir)
         n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
         n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))
-        return n_files_1 + n_files_2
-
-    #def choose_images(self):
-    #    for i in range(round(1 - self.throw_out_random * n_images())):
-     #       class_dirs = os.listdir(self.data_dir)
-     #       random_file_1 = random.choice(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
-      #      self.dataset.append(random_file_1)
-       #     random_file_2 = random.choice(os.listdir(os.path.join(self.data_dir, class_dirs[1])))
-        #    self.dataset.append(random_file_2)
-        #return torch.utils.data.DataLoader(self.dataset,
-         #                                  batch_size=self.batch_size,
-          #                                 shuffle=True,
-           #                                num_workers=self.num_workers)    
-            
+        return n_files_1 + n_files_2 
         
-
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
-            
-            class_dirs = os.listdir(self.data_dir)
-            n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
-            n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))         
-            n_files = n_files_1 + n_files_2                           
-            len_stay = n_files - self.throw_out_random * n_files
-            half_len =  len_stay // 2              
-                               
-            for i in range(half_len):
-                class_dirs = os.listdir(self.data_dir)
-                random_file_1 = random.choice(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
-                os.listdir(self.dataset).append(random_file_1)
-
-                random_file_2 = random.choice(os.listdir(os.path.join(self.data_dir, class_dirs[1])))
-                os.listdir(self.dataset).append(random_file_2)
 
             self.dataset = datasets.ImageFolder(self.data_dir,
                                                 loader=crop_black_and_white_loader,
                                                 transform=transforms.transforms.Compose([self.base_transform,
                                                                                          self.train_transform])
                                                 )
-                                                
-            
-            #self.dataset, data_extra = random_split(self.dataset,
-            #                                        [round(len(self.dataset) * (1 - self.throw_out_random)),
-            #                                        round(len(self.dataset) * self.throw_out_random)])
 
+            class_dirs = os.listdir(self.data_dir)
+            n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
+            n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))         
+            n_files = n_files_1 + n_files_2                           
+            n_stay_files = round(n_files - self.throw_out_random * n_files)
+            
+            self.dataset = torch.utils.data.Subset(self.dataset, np.random.choice(len(self.dataset), n_stay_files, replace=False))
+            print("Num of images", self.dataset)                                    
+            
             self.data_train, self.data_validation = random_split(self.dataset,
-                                                                 [round(len(self.dataset.samples) * 0.8),
-                                                                  round(len(self.dataset.samples) * 0.2)])
+                                                                 [round(len(self.dataset) * 0.8),
+                                                                  round(len(self.dataset) * 0.2)])
 
         if stage == 'predict':
             self.dataset = NoLabelDataset(self.data_dir,
