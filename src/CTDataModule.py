@@ -68,8 +68,7 @@ class CTDataModule(pl.LightningDataModule):
             n_files = n_files_1 + n_files_2                           
             n_stay_files = round(n_files - self.throw_out_random * n_files)
             
-            self.dataset = torch.utils.data.Subset(self.dataset, np.random.choice(len(self.dataset), n_stay_files, replace=False))
-                                                
+            self.dataset = torch.utils.data.Subset(self.dataset, np.random.choice(len(self.dataset), n_stay_files, replace=False))                                 
             
             self.data_train, self.data_validation = random_split(self.dataset,
                                                                  [round(len(self.dataset) * 0.8),
