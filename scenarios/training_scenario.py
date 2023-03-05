@@ -35,6 +35,11 @@ logger = logging.getLogger(__name__)
               help="Min training epochs to run.")
 @click.option('--optimizer-name', type=str, default='adam',
               help="'adam' or 'adamax'")
+@click.option('--auto-tune-learning-rate', type=bool, default=False,
+              help="Use True if you want your learning_rate to be auto tuned ")
+@click.option('--learning-rate', type=float, default=None,
+              help=("If you do not use auto tune learning rate set your own lr in a model."
+                    "Else it would be set to default model value."))
 @click.option('--version-name', type=str, default=None,
               help=("Name of study folder in 'checkpoints_path/lightning_logs/'"
                     "By default it is version_{$num}."))
@@ -42,14 +47,6 @@ logger = logging.getLogger(__name__)
               help="Logging level, 30 for WARNING , 20 for INFO, 10 for DEBUG")
 @click.option('--gpu', type=bool, default=False,
               help="GPU is gpu when it is used.")
-@click.option('--auto-tune-learning-rate', type=bool, default=False,
-              help="Use True if you want your learning_rate to be auto tuned ")
-@click.option('--learning-rate', type=float, default=None,
-              help=("If you do not use auto tune learning rate set your own lr in a model."
-                    "Else it would be set to default model value."))
-@click.option('--throw-out-random', type=float, default=0.,
-              help=("Use float value to throw out a part of dataset "
-                    "Else it would be set to default model value."))
 def main(**params):
     """Run model training.
     dataset_path is path to dataset with images for training.
@@ -124,6 +121,9 @@ def main(**params):
 
     if trainer.auto_lr_find:
         lr_finder = trainer.tuner.lr_find(model, dm, early_stop_threshold=None)
+
+        fig = lr_finder.plot(suggest=True)
+        plt.savefig('LR_FINDER.png')
 
         # trainer.tune(model, dm)
         model.learning_rate = lr_finder.suggestion()

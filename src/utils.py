@@ -36,26 +36,6 @@ def maxpool_output_shape(input_size: Tuple[int, int],
     return height_new, width_new
 
 
-def plot_conf_matr(y_true, y_pred, nsamples: int, title: str = ''):
-    """Built conf matrix and f1 and plot it."""
-    y_true = pd.Series(y_true.numpy())
-    y_pred = pd.Series(y_pred.numpy())
-
-    matr = confusion_matrix(y_true, y_pred)
-    matr_new = np.zeros((2, 2))
-    matr_new[0] = matr[0] / y_true.value_counts()[0]
-    matr_new[1] = matr[1] / y_true.value_counts()[1]
-
-    roc_auc = roc_auc_score(y_true, y_pred)
-    fb_weighted = fbeta_score(y_true, y_pred, beta=1.1, average='weighted')
-    sns.heatmap(matr_new, annot=True, fmt='.3', cmap='Blues')
-
-    plt.title(
-        f'f_beta_weighted={fb_weighted:.3}, \n {nsamples} сэмплов. {title}')
-    plt.ylabel('Expert')
-    plt.xlabel('Prediction')
-
-
 def show_tensor(tensor_img: torch.Tensor):
     img_norm = tensor_img.permute(1, 2, 0)[:, :, 0].detach().numpy()
     plt.imshow(img_norm, cmap='gray')
