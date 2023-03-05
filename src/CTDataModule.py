@@ -69,7 +69,7 @@ class CTDataModule(pl.LightningDataModule):
             n_stay_files = round(n_files - self.throw_out_random * n_files)
             
             self.dataset = torch.utils.data.Subset(self.dataset, np.random.choice(len(self.dataset), n_stay_files, replace=False))
-            print("Num of images", self.dataset)                                    
+                                                
             
             self.data_train, self.data_validation = random_split(self.dataset,
                                                                  [round(len(self.dataset) * 0.8),

@@ -47,6 +47,9 @@ logger = logging.getLogger(__name__)
 @click.option('--learning-rate', type=float, default=None,
               help=("If you do not use auto tune learning rate set your own lr in a model."
                     "Else it would be set to default model value."))
+@click.option('--throw-out-random', type=float, default=0.,
+              help=("Give float value to decrease data."))
+              
 def main(**params):
     """Run model training.
     dataset_path is path to dataset with images for training.
@@ -76,7 +79,7 @@ def main(**params):
     learning_rate = params["learning_rate"]
     auto_lr_find = params["auto_tune_learning_rate"]
     version_name = params["version_name"]
-
+    throw_out_random = params["throw_out_random"]
     abs_path_checkpoints = os.path.abspath(checkpoints_path)
     path_model = os.path.join(abs_path_checkpoints, "lightning_logs")
 
@@ -90,7 +93,9 @@ def main(**params):
                 os.path.join(path_model, version_name))
 
     dm = CTDataModule(data_dir=dataset_path,
-                      batch_size=batch_size, num_workers=num_workers)
+                      batch_size=batch_size, 
+                      num_workers=num_workers,
+                      throw_out_random=throw_out_random)
 
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
