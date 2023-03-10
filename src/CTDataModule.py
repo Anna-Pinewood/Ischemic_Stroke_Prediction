@@ -13,23 +13,33 @@ import random
 from src.image_transforms import crop_image, random_sharpness_or_blur
 
 
-def crop_black_and_white_loader(path):
+def crop_black_and_white_loader(path) -> Image:
+    """Read img in black and white, prepare it to be
+    uploaded to datamodule.
+    Returns
+    -------
+    PIL.Image.Image
+        Image, ready to be processed by datamodule.
+    """
     img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     return crop_image(img)
 
 
-class CTDataModule(pl.LightningDataModule):
+class CTDataModule(pl.LightningDataModule): # pylint: disable=too-many-instance-attributes
+    """Treat CT brain scans."""
+
     def __init__(self,
                  data_dir: str,
                  batch_size: int = 32,
                  num_workers: int = 0,
-                 throw_out_random: float = 0.):
+                 throw_out_random: float = 0.,
+                 test_shuffle: bool = True):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.throw_out_random = throw_out_random
-        # self.test_shufle = test_shufle
+        self.test_shuffle = test_shuffle
 
         self.train_transform = transforms.Compose([
             transforms.RandomVerticalFlip(p=0.5),
@@ -47,11 +57,22 @@ class CTDataModule(pl.LightningDataModule):
         self.num_classes = 2
 
     @property
-    def n_images(self):
+    def n_images(self) -> int:
+        """How many initial images are there in datamodule."""
         class_dirs = os.listdir(self.data_dir)
         n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
         n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))
         return n_files_1 + n_files_2 
+    
+    @property
+    def n_stay_images(self) -> int:
+        """How many images are stayed in datamodule."""
+        class_dirs = os.listdir(self.data_dir)
+        n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
+        n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))         
+        n_files = n_files_1 + n_files_2                           
+        n_stay_files = round(n_files - self.throw_out_random * n_files)
+        return n_stay_files
         
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
@@ -102,7 +123,7 @@ class CTDataModule(pl.LightningDataModule):
         return torch.utils.data.DataLoader(self.dataset,
                                            batch_size=self.batch_size,
                                            num_workers=self.num_workers,
-                                           shuffle=True
+                                           shuffle=self.test_shuffle
                                            )
 
 
