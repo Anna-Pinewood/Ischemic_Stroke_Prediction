@@ -1,6 +1,8 @@
 # Ischemic_Stroke_Prediction
 Predicting, whether patient has Ischemic Stroke from brain CT images.
 
+![Stroke brain](stroke_brain.png)
+
 If your machine doesn't have gpu, use env files from folder 'poetry_no_gpu'.
 
 - Run this command to start train new model.
