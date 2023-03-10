@@ -8,7 +8,6 @@ from PIL import Image
 from torch.utils.data import random_split
 from torchvision import datasets, transforms
 from torchvision.datasets.vision import VisionDataset
-import random
 
 from src.image_transforms import crop_image, random_sharpness_or_blur
 
@@ -66,12 +65,8 @@ class CTDataModule(pl.LightningDataModule): # pylint: disable=too-many-instance-
     
     @property
     def n_stay_images(self) -> int:
-        """How many images are stayed in datamodule."""
-        class_dirs = os.listdir(self.data_dir)
-        n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
-        n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))         
-        n_files = n_files_1 + n_files_2                           
-        n_stay_files = round(n_files - self.throw_out_random * n_files)
+        """How many images are stayed in datamodule."""                         
+        n_stay_files = round(self.n_images - self.throw_out_random * self.n_images)
         return n_stay_files
         
     def setup(self, stage=None):
@@ -82,14 +77,8 @@ class CTDataModule(pl.LightningDataModule): # pylint: disable=too-many-instance-
                                                 transform=transforms.transforms.Compose([self.base_transform,
                                                                                          self.train_transform])
                                                 )
-
-            class_dirs = os.listdir(self.data_dir)
-            n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
-            n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))         
-            n_files = n_files_1 + n_files_2                           
-            n_stay_files = round(n_files - self.throw_out_random * n_files)
             
-            self.dataset = torch.utils.data.Subset(self.dataset, np.random.choice(len(self.dataset), n_stay_files, replace=False))                                 
+            self.dataset = torch.utils.data.Subset(self.dataset, np.random.choice(len(self.dataset), self.n_stay_images, replace=False))                                 
             
             self.data_train, self.data_validation = random_split(self.dataset,
                                                                  [round(len(self.dataset) * 0.8),
