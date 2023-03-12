@@ -37,6 +37,8 @@ logger = logging.getLogger(__name__)
               help="Use True if you want your learning_rate to be auto tuned ")
 @click.option('--learning-rate', type=float, default=1e-5,
               help="If you do not use auto tune learning rate set your own lr in a model")
+@click.option('--throw-out-random', type=float, default=0.,
+              help=("Give float value to decrease data."))
 @click.option('--version-name', type=str, default=None,
               help=("Name of study folder in 'checkpoints_path/lightning_logs/'"
                     "By default it is version_{$num}."))
@@ -67,6 +69,13 @@ def main(**params):  # pylint: disable=too-many-locals
     checkpoints_path = params["checkpoints_path"]
     checkpoint = params["checkpoint"]
     gpu = params["gpu"]
+    learning_rate = params["auto_tune_learning_rate"]
+    throw_out_random = params["throw_out_random"]
+
+    dm = CTDataModule(data_dir=dataset_path,
+                      batch_size=batch_size, 
+                      num_workers=num_workers,
+                      throw_out_random = throw_out_random)
     auto_learning_rate = params["auto_tune_learning_rate"]
     learning_rate = params['learning_rate']
     version_name = params["version_name"]
