@@ -1,5 +1,5 @@
 import os
-
+from typing import Optional, Union
 import cv2
 import numpy as np
 import pytorch_lightning as pl
@@ -55,6 +55,10 @@ class CTDataModule(pl.LightningDataModule): # pylint: disable=too-many-instance-
 
         self.num_classes = 2
 
+        self.dataset: Union[NoLabelDataset, datasets.ImageFolder, None] = None
+        self.data_train:  Optional[datasets.ImageFolder] = None
+        self.data_validation: Optional[datasets.ImageFolder] = None
+
     @property
     def n_images(self) -> int:
         """How many initial images are there in datamodule."""
@@ -78,7 +82,10 @@ class CTDataModule(pl.LightningDataModule): # pylint: disable=too-many-instance-
                                                                                          self.train_transform])
                                                 )
             
-            self.dataset = torch.utils.data.Subset(self.dataset, np.random.choice(len(self.dataset), self.n_stay_images, replace=False))                                 
+            self.dataset = torch.utils.data.Subset(self.dataset, 
+                                                    np.random.choice(len(self.dataset), 
+                                                    self.n_stay_images, replace=False)
+                                                )                                 
             
             self.data_train, self.data_validation = random_split(self.dataset,
                                                                  [round(len(self.dataset) * 0.8),
