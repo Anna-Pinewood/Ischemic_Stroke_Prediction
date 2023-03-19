@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Optional, Union
 import cv2
@@ -10,6 +11,8 @@ from torchvision import datasets, transforms
 from torchvision.datasets.vision import VisionDataset
 
 from src.image_transforms import crop_image, random_sharpness_or_blur
+
+logger = logging.getLogger(__name__)
 
 
 def crop_black_and_white_loader(path) -> Image:
@@ -24,7 +27,7 @@ def crop_black_and_white_loader(path) -> Image:
     return crop_image(img)
 
 
-class CTDataModule(pl.LightningDataModule): # pylint: disable=too-many-instance-attributes
+class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance-attributes
     """Treat CT brain scans."""
 
     def __init__(self,
@@ -65,14 +68,15 @@ class CTDataModule(pl.LightningDataModule): # pylint: disable=too-many-instance-
         class_dirs = os.listdir(self.data_dir)
         n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
         n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))
-        return n_files_1 + n_files_2 
-    
+        return n_files_1 + n_files_2
+
     @property
     def n_stay_images(self) -> int:
-        """How many images are stayed in datamodule."""                         
-        n_stay_files = round(self.n_images - self.throw_out_random * self.n_images)
+        """How many images are stayed in datamodule."""
+        n_stay_files = round(
+            self.n_images - self.throw_out_random * self.n_images)
         return n_stay_files
-        
+
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
 
@@ -81,15 +85,18 @@ class CTDataModule(pl.LightningDataModule): # pylint: disable=too-many-instance-
                                                 transform=transforms.transforms.Compose([self.base_transform,
                                                                                          self.train_transform])
                                                 )
-            
-            self.dataset = torch.utils.data.Subset(self.dataset, 
-                                                    np.random.choice(len(self.dataset), 
-                                                    self.n_stay_images, replace=False)
-                                                )                                 
-            
+
+            self.dataset = torch.utils.data.Subset(self.dataset,
+                                                   np.random.choice(len(self.dataset),
+                                                                    self.n_stay_images, replace=False)
+                                                   )
+
             self.data_train, self.data_validation = random_split(self.dataset,
                                                                  [round(len(self.dataset) * 0.8),
                                                                   round(len(self.dataset) * 0.2)])
+
+            logger.info('Num train images: %s', str(len(self.data_train)))
+            logger.info('Num valid images: %s', str(len(self.data_validation)))
 
         if stage == 'predict':
             self.dataset = NoLabelDataset(self.data_dir,
