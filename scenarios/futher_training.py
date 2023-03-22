@@ -104,8 +104,7 @@ def main(**params):  # pylint: disable=too-many-locals
 
     tb_logger = pl.loggers.TensorBoardLogger(save_dir=checkpoints_path,
                                              version=version_name)
-    model = DeepSymNet(optimizer_name=optimizer_name,
-                       img_size=(dm.image_height, dm.image_width))
+    model = DeepSymNet.load_from_checkpoint(checkpoint)
     trainer = pl.Trainer(default_root_dir=checkpoints_path,
                          logger=tb_logger,
                          max_epochs=max_epochs,
