@@ -12,6 +12,9 @@ from torchvision.datasets.vision import VisionDataset
 
 from src.image_transforms import crop_image, random_sharpness_or_blur
 
+IMG_HEIGHT = 128
+IMG_WIDTH = 98
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,13 +38,18 @@ class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance
                  batch_size: int = 32,
                  num_workers: int = 0,
                  throw_out_random: float = 0.,
-                 test_shuffle: bool = True):
+                 test_shuffle: bool = True,
+                 img_size: Optional[Tuple[int, int]] = None):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.throw_out_random = throw_out_random
         self.test_shuffle = test_shuffle
+
+        self.image_height, self.image_width = IMG_HEIGHT, IMG_WIDTH
+        if img_size is not None:
+            self.image_height, self.image_width = img_size
 
         self.train_transform = transforms.Compose([
             transforms.RandomVerticalFlip(p=0.5),
@@ -52,7 +60,7 @@ class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance
 
         self.base_transform = transforms.Compose([
             transforms.Resize(
-                (128, 98), interpolation=transforms.InterpolationMode.BILINEAR),
+                (IMG_HEIGHT, IMG_WIDTH), interpolation=transforms.InterpolationMode.BILINEAR),
             transforms.ToTensor(),
         ])
 

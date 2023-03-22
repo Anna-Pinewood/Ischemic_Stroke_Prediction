@@ -73,9 +73,9 @@ def main(**params):  # pylint: disable=too-many-locals
     throw_out_random = params["throw_out_random"]
 
     dm = CTDataModule(data_dir=dataset_path,
-                      batch_size=batch_size, 
+                      batch_size=batch_size,
                       num_workers=num_workers,
-                      throw_out_random = throw_out_random)
+                      throw_out_random=throw_out_random)
     auto_learning_rate = params["auto_tune_learning_rate"]
     learning_rate = params['learning_rate']
     version_name = params["version_name"]
@@ -104,7 +104,8 @@ def main(**params):  # pylint: disable=too-many-locals
 
     tb_logger = pl.loggers.TensorBoardLogger(save_dir=checkpoints_path,
                                              version=version_name)
-    model = DeepSymNet.load_from_checkpoint(checkpoint)
+    model = DeepSymNet(optimizer_name=optimizer_name,
+                       img_size=(dm.image_height, dm.image_width))
     trainer = pl.Trainer(default_root_dir=checkpoints_path,
                          logger=tb_logger,
                          max_epochs=max_epochs,
