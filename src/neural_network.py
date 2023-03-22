@@ -13,8 +13,8 @@ from src.utils import maxpool_output_shape
 
 LOGGER = logging.getLogger()
 
-IMG_HEIGHT = 128
-IMG_WIDTH = 98
+IMG_HEIGHT = 87
+IMG_WIDTH = 140
 
 
 class ConvBlock(nn.Module):

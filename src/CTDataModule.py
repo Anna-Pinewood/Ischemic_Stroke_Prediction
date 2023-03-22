@@ -49,7 +49,7 @@ class CTDataModule(pl.LightningDataModule): # pylint: disable=too-many-instance-
 
         self.base_transform = transforms.Compose([
             transforms.Resize(
-                (128, 98), interpolation=transforms.InterpolationMode.BILINEAR),
+                (87, 140), interpolation=transforms.InterpolationMode.BILINEAR),
             transforms.ToTensor(),
         ])
 
