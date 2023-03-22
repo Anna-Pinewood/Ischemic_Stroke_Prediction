@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 import cv2
 import numpy as np
 import pytorch_lightning as pl
