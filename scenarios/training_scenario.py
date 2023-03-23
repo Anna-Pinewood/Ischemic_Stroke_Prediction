@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
               help=("Path where trained model will be saved."
                     "It selected path a folder /lightning_logs/"
                     "will be created and models will be inside."))
-@click.option('--batch-size', type=int, default=32,
+@click.option('--batch-size', type=int, default=10,
               help="Batch size in a datamodule.")
 @click.option('--num-workers', type=int, default=6,
               help="Num of workers in a datamodule.")
@@ -54,7 +54,6 @@ logger = logging.getLogger(__name__)
                     "Else it would be set to default model value."))
 @click.option('--throw-out-random', type=float, default=0.,
               help=("Give float value to decrease data."))
-              
 def main(**params):
     """Run model training.
     dataset_path is path to dataset with images for training.
@@ -91,15 +90,18 @@ def main(**params):
     if version_name is None:
         version_dirs = [f for f in os.listdir(
             path_model) if f.startswith('version_')]
-        last_version = max([int(file.split('_')[1]) for file in version_dirs])
+        last_version = -1
+        if len(version_dirs) != 0:
+            last_version = max([int(file.split('_')[1])
+                               for file in version_dirs])
         version_name = f"version_{last_version+1}"
 
     logger.info("Model will be saved in %s",
                 os.path.join(path_model, version_name))
 
     dm = CTDataModule(data_dir=dataset_path,
-                      batch_size=batch_size, 
-                      num_workers=num_workers, 
+                      batch_size=batch_size,
+                      num_workers=num_workers,
                       throw_out_random=throw_out_random)
 
     checkpoint_callback = ModelCheckpoint(
@@ -115,7 +117,8 @@ def main(**params):
     tb_logger = pl.loggers.TensorBoardLogger(save_dir=checkpoints_path,
                                              version=version_name)
 
-    model = DeepSymNet(optimizer_name=optimizer_name)
+    model = DeepSymNet(optimizer_name=optimizer_name,
+                       img_size=(dm.image_height, dm.image_width))
     trainer = pl.Trainer(default_root_dir=checkpoints_path,
                          logger=tb_logger,
                          min_epochs=min_epochs,
@@ -139,7 +142,7 @@ def main(**params):
         model.learning_rate = learning_rate
 
     logger.info('Learning rate: %s', str(model.learning_rate))
-    #logger.info('Num images: %s', str(dm.setup.dataset_subset))
+    # logger.info('Num images: %s', str(dm.setup.dataset_subset))
 
     trainer.fit(model, dm)
 

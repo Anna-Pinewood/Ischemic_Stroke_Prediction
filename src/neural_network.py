@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -10,11 +10,9 @@ from pytorch_lightning.core.module import LightningModule
 from sklearn.metrics import f1_score, roc_auc_score, mean_squared_error
 
 from src.utils import maxpool_output_shape
+from src.CTDataModule import IMG_HEIGHT, IMG_WIDTH
 
 LOGGER = logging.getLogger()
-
-IMG_HEIGHT = 87
-IMG_WIDTH = 140
 
 
 class ConvBlock(nn.Module):
@@ -80,11 +78,15 @@ class SiameseAndDifferenceBlock(nn.Module):
     def forward(self, x):
         input1 = self._split_tensor(x, width=IMG_WIDTH)
         input2 = self._split_tensor(x, left=False, width=IMG_WIDTH)
-        output1 = self.inception_chain(input1)
-        output2 = self.inception_chain(input2)
-        output2_reflected = torch.flip(output2, dims=[3])
 
-        return abs(output1 - output2_reflected)
+        output = self.inception_chain(torch.cat([input1, input2], dim=0))
+        N = x.shape[0]
+        # output1 = self.inception_chain(input1)
+        # output2 = self.inception_chain(input2)
+        # output2_reflected = torch.flip(output2, dims=[3])
+
+        # return abs(output1 - output2_reflected)
+        return abs(output[0:N] - torch.flip(output[N:], dims=[3]))
 
     @staticmethod
     def _split_tensor(
@@ -114,7 +116,8 @@ class SiameseAndDifferenceBlock(nn.Module):
 class DeepSymNet(LightningModule):
     def __init__(self,
                  optimizer_name: str = 'adam',
-                 learning_rate: Optional[float] = None):
+                 learning_rate: Optional[float] = None,
+                 img_size: Optional[Tuple[int, int]] = None):
         """
         Initialize the model with specific learning rate.
         Parameters
@@ -130,6 +133,9 @@ class DeepSymNet(LightningModule):
         """
         super().__init__()
         self.optimizer_name = optimizer_name
+        self.image_height, self.image_width = IMG_HEIGHT, IMG_WIDTH
+        if img_size is not None:
+            self.image_height, self.image_width = img_size
 
         self.siamese_part = SiameseAndDifferenceBlock()
 

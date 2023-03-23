@@ -73,9 +73,9 @@ def main(**params):  # pylint: disable=too-many-locals
     throw_out_random = params["throw_out_random"]
 
     dm = CTDataModule(data_dir=dataset_path,
-                      batch_size=batch_size, 
+                      batch_size=batch_size,
                       num_workers=num_workers,
-                      throw_out_random = throw_out_random)
+                      throw_out_random=throw_out_random)
     auto_learning_rate = params["auto_tune_learning_rate"]
     learning_rate = params['learning_rate']
     version_name = params["version_name"]
