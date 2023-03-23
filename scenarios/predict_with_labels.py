@@ -12,8 +12,8 @@ seed_everything(42)
 
 if __name__ == "__main__":
     # test_dir = "/home/martinumer/IschemicData/test/"
-    test_dir = "/home/martinumer/HemorrData/test"
-    checkpoint_path = "/home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/lightning_logs/hem_lr_best/checkpoints/epoch=21-step=616.ckpt"
+    test_dir = "/home/martinumer/CancerDataL/test"
+    checkpoint_path = "/home/martinumer/Ischemic_Stroke_Prediction/lightning_logs/cancer_l_1/checkpoints/epoch=76-step=385.ckpt"
 
     model = DeepSymNet.load_from_checkpoint(checkpoint_path)
     model.eval()
