@@ -11,23 +11,6 @@ from torchvision.datasets.vision import VisionDataset
 import random
 
 
-def gauss_noise_tensor(img):
-    """Add Gaussian noise to image."""
-    assert isinstance(img, torch.Tensor)
-    dtype = img.dtype
-    if not img.is_floating_point():
-        img = img.to(torch.float32)
-
-    sigma = 1.0
-
-    out = img + sigma * torch.randn_like(img)
-
-    if out.dtype != dtype:
-        out = out.to(dtype)
-
-    return out
-
-
 class AddGaussianNoise(object):
     def __init__(self, mean=0., std=1.):
         self.std = std
