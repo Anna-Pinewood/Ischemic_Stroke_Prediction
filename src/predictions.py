@@ -64,6 +64,7 @@ def plot_conf_matrix(y_true: pd.Series,
     plot.set(xlabel='True', ylabel='Pred')
     plot.set(title=f'{n_samples} сэмплов')
     plt.show()
+    plt.savefig('predictoneclass.png')
     return plot
 
 
