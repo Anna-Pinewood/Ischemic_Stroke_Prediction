@@ -1,20 +1,20 @@
 # %%
 """Get predictions, compute threshold, build ROC-curve and confusion matrix. """
-from sklearn.metrics import f1_score, balanced_accuracy_score
-
-from src.neural_network import DeepSymNet
-from src.CTDataModule import CTDataModule
-
-from src.predictions import get_test_predictions, plot_conf_matrix, plot_roc_curve
 from src.utils import seed_everything
+from src.predictions import get_test_predictions, plot_conf_matrix, plot_roc_curve
+from src.CTDataModule import CTDataModule
+from src.neural_network import DeepSymNet
+from sklearn.metrics import f1_score, balanced_accuracy_score
+import pandas as pd
+pd.set_option('display.max_rows', 500)
+
 
 seed_everything(42)
 
 if __name__ == "__main__":
-    # test_dir = "/home/martinumer/IschemicData/test/"
-    test_dir = "/home/martinumer/HemorrData/test"
-    checkpoint_path = "/home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/lightning_logs/hem_lr_best/checkpoints/epoch=21-step=616.ckpt"
-
+    test_dir = "/home/martinumer/IschemicData/test"
+    # test_dir = "/home/martinumer/HemorrData/test"
+    checkpoint_path = "/home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/lightning_logs/BEST_ish_lr/checkpoints/epoch=62-step=252.ckpt"
     model = DeepSymNet.load_from_checkpoint(checkpoint_path)
     model.eval()
 
@@ -39,5 +39,5 @@ if __name__ == "__main__":
 
     plot_conf_matrix(labels_preds['y_true'], labels_preds['pred_bin'])
     plot_roc_curve(labels_preds['y_pred_proba'], labels_preds['y_true'])
-
+    print(labels_preds)
 # %%

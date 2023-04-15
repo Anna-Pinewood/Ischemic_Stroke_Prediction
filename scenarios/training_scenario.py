@@ -151,3 +151,4 @@ def main(**params):
 
 if __name__ == "__main__":
     main()  # pylint: disable=no-value-for-parameter
+# poetry run python scenarios/training_scenario.py  /home/martinumer/IschemicData/train/ --gpu true --version-name "exp_remove_layer_lr" --logging-level 20 --learning-rate 3.9810717055349735e-05

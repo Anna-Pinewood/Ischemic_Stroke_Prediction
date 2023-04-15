@@ -11,21 +11,16 @@ from torchvision.datasets.vision import VisionDataset
 import random
 
 
-def gauss_noise_tensor(img):
-    """Add Gaussian noise to image."""
-    assert isinstance(img, torch.Tensor)
-    dtype = img.dtype
-    if not img.is_floating_point():
-        img = img.to(torch.float32)
+class AddGaussianNoise(object):
+    def __init__(self, mean=0., std=1.):
+        self.std = std
+        self.mean = mean
 
-    sigma = 1.0
+    def __call__(self, tensor):
+        return tensor + torch.randn(tensor.size()) * self.std + self.mean
 
-    out = img + sigma * torch.randn_like(img)
-
-    if out.dtype != dtype:
-        out = out.to(dtype)
-
-    return out
+    def __repr__(self):
+        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
 
 def random_sharpness_or_blur(img):

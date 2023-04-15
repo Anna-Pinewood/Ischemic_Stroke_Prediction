@@ -68,6 +68,5 @@ def main(**params):
 
 
 if __name__ == "__main__":
-    # checkpoint_path = "/home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/lightning_logs/demo"
-    # test_dir = "/home/martinumer/HemorrData/hemorr_test"
     main()  # pylint: disable=no-value-for-parameter
+    # poetry run python scenarios/test_get_metrics.py /home/martinumer/IschemicData/test/ /home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/lightning_logs/exp_remove_layer_lr

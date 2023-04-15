@@ -42,6 +42,25 @@ def show_tensor(tensor_img: torch.Tensor):
     plt.show()
 
 
+def plot_tensors(tensors, labels=None):
+    num_tensors = len(tensors)
+    rows = 1
+    cols = num_tensors
+    _, axs = plt.subplots(rows, cols, figsize=(cols * 5, rows * 5))
+
+    for i in range(num_tensors):
+        ax = axs[i] if num_tensors > 1 else axs
+        img_norm = tensors[i].permute(1, 2, 0)[:, :, 0].detach().numpy()
+        ax.imshow(img_norm, cmap='gray')
+        ax.axis('off')
+        if labels is not None:
+            ax.set_title(labels[i])
+        else:
+            ax.set_title(f'Tensor {i+1}')
+
+    plt.show()
+
+
 def seed_everything(seed: int):
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
