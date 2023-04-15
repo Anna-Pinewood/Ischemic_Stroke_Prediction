@@ -13,7 +13,7 @@ seed_everything(42)
 if __name__ == "__main__":
     # test_dir = "/home/martinumer/IschemicData/test/"
     test_dir = "/home/martinumer/CancerDataL/test"
-    checkpoint_path = "/home/martinumer/Ischemic_Stroke_Prediction/lightning_logs/cancer_l_1/checkpoints/epoch=76-step=385.ckpt"
+    checkpoint_path = "/home/martinumer/Ischemic_Stroke_Prediction/lightning_logs/cancer_one_class/checkpoints/last.ckpt"
 
     model = DeepSymNet.load_from_checkpoint(checkpoint_path)
     model.eval()
@@ -37,7 +37,9 @@ if __name__ == "__main__":
     labels_preds['pred_bin'] = (
         labels_preds.y_pred_proba > threshold_best).astype(int)
 
+    print(labels_preds)
     plot_conf_matrix(labels_preds['y_true'], labels_preds['pred_bin'])
     plot_roc_curve(labels_preds['y_pred_proba'], labels_preds['y_true'])
 
+    #plt.savefig('books_read.png')
 # %%
