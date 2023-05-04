@@ -9,7 +9,7 @@ import torch.nn as nn
 from pytorch_lightning.core.module import LightningModule
 from sklearn.metrics import f1_score, roc_auc_score, mean_squared_error
 
-from src.utils import maxpool_output_shape
+from src.utils import maxpool_output_shape, maxpool_output_shape_3d
 from src.CTDataModule import IMG_HEIGHT, IMG_WIDTH
 
 LOGGER = logging.getLogger()
@@ -18,8 +18,8 @@ LOGGER = logging.getLogger()
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_chanels, kernel_size, **kwargs):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_chanels, kernel_size, **kwargs)
-        self.bn = nn.BatchNorm2d(out_chanels)
+        self.conv = nn.Conv3d(in_channels, out_chanels, kernel_size, **kwargs)
+        self.bn = nn.BatchNorm3d(out_chanels)
 
     def forward(self, x):
         return nn.functional.relu(self.bn(self.conv(x)))
@@ -46,7 +46,7 @@ class InceptionBlock(nn.Module):
             ConvBlock(reduce_5x5, out_5x5, kernel_size=5, padding=2),
         )
         self.branch_maxpool = nn.Sequential(
-            nn.MaxPool2d(kernel_size=3, padding=1, stride=1),
+            nn.MaxPool3d(kernel_size=3, padding=1, stride=1),
             ConvBlock(in_channels, out_pooling, kernel_size=1),
         )
 
@@ -142,12 +142,12 @@ class DeepSymNet(LightningModule):
         self.shared_tunnel = nn.Sequential(
             InceptionBlock(256, 64, 64, 64, 64, 64, 64),
             InceptionBlock(256, 64, 64, 64, 64, 64, 64),
-            nn.MaxPool2d(kernel_size=3, padding=1))
+            nn.MaxPool3d(kernel_size=3, padding=1))
 
-        height_new, width_new = maxpool_output_shape(
-            input_size=(IMG_HEIGHT, IMG_WIDTH//2),
+        depth_new, height_new, width_new = maxpool_output_shape_3d(
+            input_size=(IMG_DEPTH, IMG_HEIGHT, IMG_WIDTH//2),
             layer=self.shared_tunnel[-1])
-        units_fc = height_new * width_new * 256
+        units_fc = depth_new * height_new * width_new * 256
 
         self.fc1 = nn.Sequential(
             nn.Linear(units_fc, 1)

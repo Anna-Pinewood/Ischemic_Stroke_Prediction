@@ -36,6 +36,41 @@ def maxpool_output_shape(input_size: Tuple[int, int],
     return height_new, width_new
 
 
+def maxpool_output_shape_3d(input_size: Tuple[int, int, int]):
+    """
+    Calculates the output shape of a 3D maxpool layer.
+
+    Args:
+        img_heights (int): Height of each input image.
+        img_width (int): Width of each input image.
+        img_nums (int): Number of input images.
+        pool_size (tuple of int): Size of the pooling window. Should be in the form (pool_height, pool_width, pool_depth).
+        strides (tuple of int): Stride of the pooling window. Should be in the form (stride_height, stride_width, stride_depth).
+
+    Returns:
+        tuple of int: The output shape of the maxpool layer. Should be in the form (output_height, output_width, output_depth, img_nums).
+    """
+
+    if not isinstance(kernel_size, tuple):
+        kernel_size = (kernel_size, kernel_size)
+    if not isinstance(padding, tuple):
+        padding = (padding, ) * 3
+    if not isinstance(dilation, tuple):
+        dilation = (dilation, ) * 3
+    if not isinstance(stride, tuple):
+        stride = (stride, ) * 3
+
+    d_in, h_in, w_in = input_size
+
+    d_out = (d_in + 2*padding[0] - dilation[0] *
+             (kernel_size[0] - 1) - 1) / stride[0] + 1
+    h_out = (h_in + 2*padding[1] - dilation[1] *
+             (kernel_size[1] - 1) - 1) / stride[1] + 1
+    w_out = (w_in + 2*padding[2] - dilation[2] *
+             (kernel_size[2] - 1) - 1) / stride[2] + 1
+    return (d_out, h_out, w_out)
+
+
 def show_tensor(tensor_img: torch.Tensor):
     img_norm = tensor_img.permute(1, 2, 0)[:, :, 0].detach().numpy()
     plt.imshow(img_norm, cmap='gray')

@@ -12,8 +12,11 @@ from torchvision.datasets.vision import VisionDataset
 
 from src.image_transforms import crop_image, random_sharpness_or_blur
 
-IMG_HEIGHT = 128
-IMG_WIDTH = 98
+IMG_HEIGHT = 512
+IMG_WIDTH = 512
+# IMG_HEIGHT = 128
+# IMG_WIDTH = 98
+IMG_DEPTH = 20
 
 logger = logging.getLogger(__name__)
 
