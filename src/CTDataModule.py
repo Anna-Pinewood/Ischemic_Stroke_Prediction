@@ -6,7 +6,7 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 from PIL import Image
-from torch.utils.data import random_split
+from torch.utils.data import random_split, Dataset
 from torchvision import datasets, transforms
 from torchvision.datasets.vision import VisionDataset
 
@@ -172,18 +172,120 @@ class NoLabelDataset(VisionDataset):
         return len(os.listdir(self.root))
 
 
-class DicomDataset(VisionDataset):
+'''class DicomDataset(VisionDataset):
     """Used for folders with dicom files."""
     def __getitem__(self, index):
         image_files = os.listdir(self.root)
-        path_image = pydicom.dcmread(os.path.join(self.root, image_files[index]))
-        image = path_image.pixel_array.astype(float)
-        image = (image - np.min(image)) / (np.max(image) - np.min(image))
-        tensor = np.zeros((1, image.shape[0], image.shape[1], 1))
-        tensor[0, :, :, 0] = image
-        if self.transform is not None:
-            tensor = self.transform(tensor)
-        return tensor
+        total = 0
+        folders = ([name for name in image_files
+                    if os.path.isdir(os.path.join(self.root, name))])
+        for folder in folders:
+            new_path = os.path.join(self.root, folder)
+            contents = len([name for name in os.listdir(new_path) if os.path.isfile(os.path.join(new_path, name))])
+            total += contents
+        files = []
+        labels = ([name for name in image_files
+                if os.path.isdir(os.path.join(self.root, name))])
+        for label in labels:
+            new_path = os.path.join(self.root, label)
+            file_list = os.listdir(new_path)
+            for file in file_list:
+                files.append([file, label])
+        image_file = pydicom.dcmread(os.path.join(self.root, files[index][1], files[index][0]))
+
+        image = np.array(image_file.pixel_array, dtype=np.float32)[np.newaxis]  # Add channel dimension
+        image = torch.from_numpy(image)
+        print(files[index])
+        if files[index][1] == 'test_stroke':
+            label = 0
+        else:
+            label = 1
+        #label = files[index][1]
+        #if self.transform:
+        #    image = self.transform(image)
+
+        return image, label
+
 
     def __len__(self):
-        return len(os.listdir(self.root))
+        return len(os.listdir(self.root))'''
+
+'''class DicomDataset(Dataset):
+    def __init__(self, root): #root = '/home/martinumer/DataDicNop/test' image_dir = 'test_normal (0), test_stroke (1)'
+        #self.image_dir = os.path.join(root, image_dir)  # ImageData/train or ImageData/test
+        self.root = root
+        #self.image_dir = os.listdir(self.root)
+        self.image_dir = self.root #"/home/martinumer/DataDicNop/test" ot /train
+        self.data = self.set_file_matrix()
+        self.transform = transforms.Compose([
+            transforms.Resize(128),
+            transforms.CenterCrop(128)
+        ])
+
+
+    def set_file_matrix(self):
+        # count elements
+        total = 0
+        self.root = self.image_dir
+        folders = ([name for name in os.listdir(self.root)
+                    if os.path.isdir(os.path.join(self.root, name))])
+        for folder in folders:
+            new_path = os.path.join(self.root, folder)
+            contents = len([name for name in os.listdir(new_path) if os.path.isfile(os.path.join(new_path, name))])
+            total += contents
+
+        # create list(img_name, label)
+        files = []
+        labels = ([name for name in os.listdir(self.root)
+                   if os.path.isdir(os.path.join(self.root, name))])
+        for label in labels:
+            new_path = os.path.join(self.root, label)
+            file_list = os.listdir(new_path)
+            for file in file_list:
+                files.append([file, label])
+
+        return files
+
+    def __getitem__(self, index):
+        #image_files = os.listdir(self.root)
+        #path_image = os.path.join(self.root, image_files[index])
+
+        #self.image_dir = os.path.join(self.root, self.image_dir)  # ImageData/train or ImageData/test
+        #self.data = self.set_file_matrix()
+
+        image_file = pydicom.dcmread(os.path.join(self.image_dir, self.data[index][1], self.data[index][0]))
+
+        image = np.array(image_file.pixel_array, dtype=np.float32)[np.newaxis]  # Add channel dimension
+        image = torch.from_numpy(image)
+        label = self.data[index][1]
+        if self.transform:
+            image = self.transform(image)
+
+        return image, label
+
+    def __len__(self):
+        return len(os.listdir(self.root))'''
+
+class DicomDataset(Dataset):
+    def __init__(self, root_dir):
+        self.root_dir = root_dir
+        self.image_paths = []
+        self.labels = []
+        for label in os.listdir(self.root_dir):
+            label_dir = os.path.join(self.root_dir, label)
+            for image_path in os.listdir(label_dir):
+                self.image_paths.append(os.path.join(label_dir, image_path))
+                self.labels.append(0 if label == 'train_normal' else 1)
+
+    def __getitem__(self, index):
+        image_path = self.image_paths[index]
+        label = self.labels[index]
+        image = pydicom.dcmread(image_path).pixel_array.astype(np.float32)
+        # normalize image to have zero mean and unit variance
+        image = (image - np.mean(image)) / np.std(image)
+        # add channel dimension to image (expected by PyTorch)
+        image = np.expand_dims(image, axis=0)
+        return torch.from_numpy(image), torch.tensor(label)
+
+    def __len__(self):
+        return len(self.image_paths)
