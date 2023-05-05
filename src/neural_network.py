@@ -272,7 +272,7 @@ class DeepSymNet(LightningModule):
         return best_threshold
 
 
-logging.basicConfig(level=logging.DEBUG)
-net = DeepSymNet()
-tensor = torch.randn((1, 1, 20, 512, 512))
-net(tensor)
+# logging.basicConfig(level=logging.DEBUG)
+# net = DeepSymNet()
+# tensor = torch.randn((1, 1, 20, 512, 512))
+# net(tensor)
