@@ -8,7 +8,7 @@ from sklearn.metrics import make_scorer, fbeta_score, confusion_matrix, Confusio
 import matplotlib.pyplot as plt
 import torch
 from math import floor
-from torch.nn.modules.pooling import MaxPool2d
+from torch.nn.modules.pooling import MaxPool2d, MaxPool3d
 
 
 def maxpool_output_shape(input_size: Tuple[int, int],
@@ -36,7 +36,8 @@ def maxpool_output_shape(input_size: Tuple[int, int],
     return height_new, width_new
 
 
-def maxpool_output_shape_3d(input_size: Tuple[int, int, int]):
+def maxpool_output_shape_3d(input_size: Tuple[int, int, int],
+                            layer: MaxPool3d):
     """
     Calculates the output shape of a 3D maxpool layer.
 
@@ -50,9 +51,13 @@ def maxpool_output_shape_3d(input_size: Tuple[int, int, int]):
     Returns:
         tuple of int: The output shape of the maxpool layer. Should be in the form (output_height, output_width, output_depth, img_nums).
     """
+    kernel_size = layer.kernel_size
+    stride = layer.stride
+    padding = layer.padding
+    dilation = layer.dilation
 
     if not isinstance(kernel_size, tuple):
-        kernel_size = (kernel_size, kernel_size)
+        kernel_size = (kernel_size, ) * 3
     if not isinstance(padding, tuple):
         padding = (padding, ) * 3
     if not isinstance(dilation, tuple):
@@ -62,12 +67,12 @@ def maxpool_output_shape_3d(input_size: Tuple[int, int, int]):
 
     d_in, h_in, w_in = input_size
 
-    d_out = (d_in + 2*padding[0] - dilation[0] *
-             (kernel_size[0] - 1) - 1) / stride[0] + 1
-    h_out = (h_in + 2*padding[1] - dilation[1] *
-             (kernel_size[1] - 1) - 1) / stride[1] + 1
-    w_out = (w_in + 2*padding[2] - dilation[2] *
-             (kernel_size[2] - 1) - 1) / stride[2] + 1
+    d_out = floor((d_in + 2*padding[0] - dilation[0] *
+                   (kernel_size[0] - 1) - 1) / stride[0] + 1)
+    h_out = floor((h_in + 2*padding[1] - dilation[1] *
+                   (kernel_size[1] - 1) - 1) / stride[1] + 1)
+    w_out = floor((w_in + 2*padding[2] - dilation[2] *
+                   (kernel_size[2] - 1) - 1) / stride[2] + 1)
     return (d_out, h_out, w_out)
 
 

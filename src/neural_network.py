@@ -10,7 +10,7 @@ from pytorch_lightning.core.module import LightningModule
 from sklearn.metrics import f1_score, roc_auc_score, mean_squared_error
 
 from src.utils import maxpool_output_shape, maxpool_output_shape_3d
-from src.CTDataModule import IMG_HEIGHT, IMG_WIDTH
+from src.CTDataModule import IMG_HEIGHT, IMG_WIDTH, IMG_DEPTH
 
 LOGGER = logging.getLogger()
 
@@ -80,6 +80,8 @@ class SiameseAndDifferenceBlock(nn.Module):
         input2 = self._split_tensor(x, left=False, width=IMG_WIDTH)
 
         output = self.inception_chain(torch.cat([input1, input2], dim=0))
+        # output1 = self.inception_chain(input1)
+        # output2_reflected = self.inception_chain(input2)
         N = x.shape[0]
         # output1 = self.inception_chain(input1)
         # output2 = self.inception_chain(input2)
@@ -143,7 +145,6 @@ class DeepSymNet(LightningModule):
             InceptionBlock(256, 64, 64, 64, 64, 64, 64),
             InceptionBlock(256, 64, 64, 64, 64, 64, 64),
             nn.MaxPool3d(kernel_size=3, padding=1))
-
         depth_new, height_new, width_new = maxpool_output_shape_3d(
             input_size=(IMG_DEPTH, IMG_HEIGHT, IMG_WIDTH//2),
             layer=self.shared_tunnel[-1])
@@ -269,3 +270,9 @@ class DeepSymNet(LightningModule):
             thresholds.append(threshold)
             scores.append(score)
         return best_threshold
+
+
+logging.basicConfig(level=logging.DEBUG)
+net = DeepSymNet()
+tensor = torch.randn((1, 1, 20, 512, 512))
+net(tensor)
