@@ -6,17 +6,35 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 from PIL import Image
-from torch.utils.data import random_split
+from torch.utils.data import random_split, Dataset
 from torchvision import datasets, transforms
 from torchvision.datasets.vision import VisionDataset
 
-from src.image_transforms import crop_image, random_sharpness_or_blur
+from src.image_transforms import crop_image, random_sharpness_or_blur, AddGaussianNoise
+
+import pydicom
+import numpy as np
 
 IMG_HEIGHT = 128
 IMG_WIDTH = 98
 
 logger = logging.getLogger(__name__)
 
+def read_dicom(file_path):
+    # чтение DICOM-файла
+    ds = pydicom.dcmread(file_path)
+
+    # преобразование изображения в массив NumPy
+    image = ds.pixel_array.astype(float)
+
+    # масштабирование значений пикселей в диапазон от 0 до 1
+    image = (image - np.min(image)) / (np.max(image) - np.min(image))
+
+    # создание трехмерного тензора изображения
+    tensor = np.zeros((1, image.shape[0], image.shape[1], 1))
+    tensor[0, :, :, 0] = image
+
+    return tensor
 
 def crop_black_and_white_loader(path) -> Image:
     """Read img in black and white, prepare it to be
@@ -56,6 +74,7 @@ class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance
             transforms.ColorJitter(
                 brightness=.2, contrast=.7, saturation=.1, hue=.1),
             random_sharpness_or_blur,
+            AddGaussianNoise(mean=0, std=0.2),
         ])
 
         self.base_transform = transforms.Compose([
@@ -66,9 +85,9 @@ class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance
 
         self.num_classes = 2
 
-        self.dataset: Union[NoLabelDataset, datasets.ImageFolder, None] = None
-        self.data_train:  Optional[datasets.ImageFolder] = None
-        self.data_validation: Optional[datasets.ImageFolder] = None
+        self.dataset: Union[NoLabelDataset, datasets.ImageFolder, DicomDataset, None] = None
+        self.data_train:  Optional[DicomDataset] = None
+        self.data_validation: Optional[DicomDataset] = None
 
     @property
     def n_images(self) -> int:
@@ -88,11 +107,11 @@ class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
 
-            self.dataset = datasets.ImageFolder(self.data_dir,
-                                                loader=crop_black_and_white_loader,
-                                                transform=transforms.transforms.Compose([self.base_transform,
-                                                                                         self.train_transform])
-                                                )
+            self.dataset = DicomDataset(self.data_dir)
+                                                #loader=crop_black_and_white_loader,
+                                                #transform=transforms.transforms.Compose([self.base_transform,
+                                                                                         #self.train_transform])
+                                                #)
 
             self.dataset = torch.utils.data.Subset(self.dataset,
                                                    np.random.choice(len(self.dataset),
@@ -107,13 +126,13 @@ class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance
             logger.info('Num valid images: %s', str(len(self.data_validation)))
 
         if stage == 'predict':
-            self.dataset = NoLabelDataset(self.data_dir,
-                                          transform=self.base_transform)
+            self.dataset = NoLabelDataset(self.data_dir)
+                                          #transform=self.base_transform)
 
         if stage == 'test':
-            self.dataset = datasets.ImageFolder(self.data_dir,
-                                                loader=crop_black_and_white_loader,
-                                                transform=self.base_transform)
+            self.dataset = DicomDataset(self.data_dir)
+                                                #loader=crop_black_and_white_loader,
+                                                #transform=self.base_transform)
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(self.data_train,
@@ -151,3 +170,44 @@ class NoLabelDataset(VisionDataset):
 
     def __len__(self):
         return len(os.listdir(self.root))
+
+
+class DicomDataset(Dataset):
+    def __init__(self, root_dir):
+        self.root_dir = root_dir #/home/martinumer/DataDic/test
+        self.classes = ['normal', 'stroke']
+        self.patients = os.listdir(self.root_dir) #[test_normal] and ['test_stroke']
+        self.image_paths = []
+        self.labels = []
+        for patient in self.patients:
+            patient_path = os.path.join(self.root_dir, patient) #/home/martinumer/DataDic/test/test_normal
+            image_folders = os.listdir(patient_path) #['1'], ['2'].....
+            for folder in image_folders:
+                folder_path = os.path.join(patient_path, folder) #/home/martinumer/DataDic/test/test_normal/1
+                files = os.listdir(folder_path)
+                dicom_files = [f for f in files if f.endswith('.dcm')]
+                for file in dicom_files:
+                    file_path = os.path.join(folder_path, file)
+                    self.image_paths.append(file_path)
+                    self.labels.append(0 if patient == 'train_normal' else 1)
+    def read_dicom(file_path):
+        ds = pydicom.dcmread(file_path)
+        image = ds.pixel_array.astype(float)
+        image = (image - np.min(image)) / (np.max(image) - np.min(image))
+        tensor = np.zeros((1, image.shape[0], image.shape[1], 1))
+        tensor[0, :, :, 0] = image
+
+        return tensor
+        
+    def __getitem__(self, idx):
+        label = self.labels[idx]
+        images = []
+        for image_path in self.image_paths:
+            tensor = read_dicom(image_path)
+            images.append(torch.from_numpy(tensor))
+        label = torch.tensor(label)
+        return torch.stack(images, dim=0), label
+
+    def __len__(self):
+        return len(self.image_paths)
+    
