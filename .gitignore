@@ -136,3 +136,9 @@ dmypy.json
 
 # outputs
 nohup.out
+
+# pytorch lightning study logs
+lightning_logs/
+
+# IDE folders
+.vscode/

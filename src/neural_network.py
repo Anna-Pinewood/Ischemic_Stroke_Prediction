@@ -1,18 +1,18 @@
 import logging
+from typing import Callable, Optional, Tuple, Union
 
 import numpy as np
+import pandas as pd
 import torch
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.nn as nn
 from pytorch_lightning.core.module import LightningModule
-from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
+from sklearn.metrics import f1_score, roc_auc_score, mean_squared_error
 
-from utils import maxpool_output_shape
+from src.utils import maxpool_output_shape
+from src.CTDataModule import IMG_HEIGHT, IMG_WIDTH
 
 LOGGER = logging.getLogger()
-# LOGGER.setLevel(logging.DEBUG)
-
-IMG_HEIGHT = 128
-IMG_WIDTH = 98
 
 
 class ConvBlock(nn.Module):
@@ -38,7 +38,8 @@ class InceptionBlock(nn.Module):
         self.branch_1filter = ConvBlock(in_channels, out_1x1, kernel_size=1)
 
         self.branch_3filter = nn.Sequential(ConvBlock(in_channels, reduce_3x3, kernel_size=1),
-                                            ConvBlock(reduce_3x3, out_3x3, kernel_size=3, padding=1)
+                                            ConvBlock(
+                                                reduce_3x3, out_3x3, kernel_size=3, padding=1)
                                             )
         self.branch_5filter = nn.Sequential(
             ConvBlock(in_channels, reduce_5x5, kernel_size=1),
@@ -50,7 +51,8 @@ class InceptionBlock(nn.Module):
         )
 
     def forward(self, x):
-        branches = (self.branch_1filter, self.branch_3filter, self.branch_5filter, self.branch_maxpool)
+        branches = (self.branch_1filter, self.branch_3filter,
+                    self.branch_5filter, self.branch_maxpool)
         output = torch.cat([branch(x) for branch in branches], 1)
         return output
 
@@ -76,11 +78,15 @@ class SiameseAndDifferenceBlock(nn.Module):
     def forward(self, x):
         input1 = self._split_tensor(x, width=IMG_WIDTH)
         input2 = self._split_tensor(x, left=False, width=IMG_WIDTH)
-        output1 = self.inception_chain(input1)
-        output2 = self.inception_chain(input2)
-        output2_reflected = torch.flip(output2, dims=[3])
 
-        return abs(output1 - output2_reflected)
+        output = self.inception_chain(torch.cat([input1, input2], dim=0))
+        N = x.shape[0]
+        # output1 = self.inception_chain(input1)
+        # output2 = self.inception_chain(input2)
+        # output2_reflected = torch.flip(output2, dims=[3])
+
+        # return abs(output1 - output2_reflected)
+        return abs(output[0:N] - torch.flip(output[N:], dims=[3]))
 
     @staticmethod
     def _split_tensor(
@@ -98,7 +104,6 @@ class SiameseAndDifferenceBlock(nn.Module):
             Whether to return left part of brain or not.
         width: int
             The width of the images along which the split is made.
-
         Returns
         -------
         torch.Tensor
@@ -109,8 +114,28 @@ class SiameseAndDifferenceBlock(nn.Module):
 
 
 class DeepSymNet(LightningModule):
-    def __init__(self):
+    def __init__(self,
+                 optimizer_name: str = 'adam',
+                 learning_rate: Optional[float] = None,
+                 img_size: Optional[Tuple[int, int]] = None):
+        """
+        Initialize the model with specific learning rate.
+        Parameters
+        ----------
+        optimizer_name: str
+            Configures selected optimizer.
+            Options: adam, adamax
+        learning_rate: float
+            Argument of torch.optim.Adam of configure_optimizers()
+            torch.optim.Adam(self.parameters(),
+                             learning_rate=self.learning_rate)
+
+        """
         super().__init__()
+        self.optimizer_name = optimizer_name
+        self.image_height, self.image_width = IMG_HEIGHT, IMG_WIDTH
+        if img_size is not None:
+            self.image_height, self.image_width = img_size
 
         self.siamese_part = SiameseAndDifferenceBlock()
 
@@ -125,14 +150,18 @@ class DeepSymNet(LightningModule):
         units_fc = height_new * width_new * 256
 
         self.fc1 = nn.Sequential(
-            nn.Linear(units_fc, 1) # units_fc TODO
+            nn.Linear(units_fc, 1)
         )
         self.threshold = None
+        self.learning_rate = learning_rate
+        if self.learning_rate is None:
+            self.learning_rate = 1e-5
 
     def forward(self, x):
         LOGGER.debug(f'Input shape is {x.shape}')
         output_siam = self.siamese_part(x)
-        LOGGER.debug(f'Output of SiameseAndDifferenceBlock block is {output_siam.shape}')
+        LOGGER.debug(
+            f'Output of SiameseAndDifferenceBlock block is {output_siam.shape}')
         output = self.shared_tunnel(output_siam)
         LOGGER.debug(f'Output of IM-IM-MP block is {output.shape}')
 
@@ -147,8 +176,22 @@ class DeepSymNet(LightningModule):
         return output
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-5)
-        return optimizer
+        if self.optimizer_name == "adam":
+            optimizer = torch.optim.Adam(
+                self.parameters(), lr=self.learning_rate)
+        elif self.optimizer_name == "adamax":
+            optimizer = torch.optim.Adamax(
+                self.parameters(), lr=self.learning_rate)
+
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": ReduceLROnPlateau(optimizer, mode='min', patience=12, verbose=True),
+                "monitor": "val_loss",
+                "frequency": 1
+            },
+        }
+        # return optimizer
 
     def binary_cross_entropy_loss(self, y_predicted, y_true):
         y_true = y_true.to(torch.float32)
@@ -161,7 +204,8 @@ class DeepSymNet(LightningModule):
         x, y = batch
         y_hat = self.forward(x)
         loss = self.binary_cross_entropy_loss(y_hat, y)
-        self.log("training_loss", loss, on_epoch=True, on_step=True, prog_bar=True)
+        self.log("training_loss", loss, on_epoch=True,
+                 on_step=True, prog_bar=True)
         return loss
 
     def validation_step(self, val_batch, batch_idx):
@@ -174,34 +218,54 @@ class DeepSymNet(LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        roc_auc = roc_auc_score(y ,y_hat)
-        print(f'\n\n {roc_auc} \n\n')
-        return roc_auc
+        if len(torch.unique(y)) < 2:
+            LOGGER.warning('Only one class present in y_true.'
+                           'ROC AUC score is not defined in that case.')
+            roc_auc = -1
+        else:
+            roc_auc = roc_auc_score(y, y_hat.detach().numpy())
+        rmse = np.sqrt(mean_squared_error(y, y_hat.detach().numpy()))
+        self.log('roc_auc', roc_auc)
+        self.log('rmse', rmse)
+        return {"roc_auc":  roc_auc, "rmse": rmse,
+                "y_true": y, "y_pred": y_hat}
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         x, y = batch
         y_hat = self.forward(x)
-        return y_hat
+        return {'logits': y, 'labels': y_hat}
 
-    @staticmethod
-    def find_threshold(y_predicted, y_true):
+    @ staticmethod
+    def find_threshold(y_predicted: Union[pd.Series, np.ndarray],
+                       y_true: Union[pd.Series, np.ndarray],
+                       metric: Callable = f1_score,
+                       **kwargs) -> float:
+        """
+        Find best threshold for classification results
+        based on metric.
+
+        Parameters
+        ----------
+        y_predicted : Union[pd.Series, np.ndarray]
+            Predicted scores.
+        y_true: Union[pd.Series, np.ndarray]
+            Real labels.
+        metric: Callable
+            Metric based om which best thteshold
+            is chosen.
+        **kwargs
+            Additional metric parameters.
+        """
         scores = []
         thresholds = []
         best_score = -1
-        best_i = -1
-        for i in np.linspace(0, 1, 100):
-            prediction_binary = (y_predicted > i).int()
-            score = f1_score(y_true, prediction_binary)
+        best_threshold = -1
+        for threshold in np.linspace(0, 1, 100):
+            prediction_binary = (y_predicted > threshold).astype(int)
+            score = metric.__call__(y_true, prediction_binary, **kwargs)
             if score > best_score:
                 best_score = score
-                best_i = i
-            thresholds.append(i)
+                best_threshold = threshold
+            thresholds.append(threshold)
             scores.append(score)
-        return best_i
-
-    # def predict_step(self, batch, batch_idx, dataloader_idx=0):
-    #     x, y = batch
-    #     y_hat = self.forward(x)
-    #     return y_hat
-
-# ПОДБОР ПОРОГА!
+        return best_threshold
