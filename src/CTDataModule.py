@@ -1,12 +1,14 @@
 import logging
 import os
+from pathlib import Path
 from typing import Optional, Tuple, Union
 import cv2
 import numpy as np
+import pydicom
 import pytorch_lightning as pl
 import torch
 from PIL import Image
-from torch.utils.data import random_split
+from torch.utils.data import random_split, Dataset
 from torchvision import datasets, transforms
 from torchvision.datasets.vision import VisionDataset
 
@@ -88,11 +90,7 @@ class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
 
-            self.dataset = datasets.ImageFolder(self.data_dir,
-                                                loader=crop_black_and_white_loader,
-                                                transform=transforms.transforms.Compose([self.base_transform,
-                                                                                         self.train_transform])
-                                                )
+            self.dataset = DicomDataset(self.data_dir)
 
             self.dataset = torch.utils.data.Subset(self.dataset,
                                                    np.random.choice(len(self.dataset),
@@ -111,9 +109,7 @@ class CTDataModule(pl.LightningDataModule):  # pylint: disable=too-many-instance
                                           transform=self.base_transform)
 
         if stage == 'test':
-            self.dataset = datasets.ImageFolder(self.data_dir,
-                                                loader=crop_black_and_white_loader,
-                                                transform=self.base_transform)
+            self.dataset = DicomDataset(self.data_dir)
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(self.data_train,
@@ -151,3 +147,47 @@ class NoLabelDataset(VisionDataset):
 
     def __len__(self):
         return len(os.listdir(self.root))
+
+
+class DicomDataset(Dataset):
+    def __init__(self, root_dir):
+        self.root_dir = Path(root_dir)
+        sub_pathes = list(self.root_dir.glob("*/"))
+        patients_one = list(sub_pathes[0].glob("*/"))
+        patients_two = list(sub_pathes[1].glob("*/"))
+        self.patients = patients_one + patients_two
+        self.labels = [0] * len(patients_one) + [1] * len(patients_two)
+    def read_patient(self, path):
+        dcm_files = list(path.glob("*.dcm"))
+        tensor_list = []
+        for dcm in dcm_files:
+            dcm_read = pydicom.dcmread(dcm)
+            dcm_img = dcm_read.pixel_array.astype(float)
+            dcm_img_norm = (dcm_img - np.min(dcm_img)) / (np.max(dcm_img) - np.min(dcm_img))
+            dcm_tensor = torch.Tensor(dcm_img_norm)
+            tensor_list.append(dcm_tensor)
+        stacked_dcm = torch.stack(tensor_list)
+        stacked_dcm_dim = stacked_dcm.unsqueeze(0)
+        return stacked_dcm_dim
+
+    # def read_dicom(file_path):
+    #     ds = pydicom.dcmread(file_path)
+    #     image = ds.pixel_array.astype(float)
+    #     image = (image - np.min(image)) / (np.max(image) - np.min(image))
+    #     tensor = np.zeros((1, image.shape[0], image.shape[1], 1))
+    #     tensor[0, :, :, 0] = image
+    #
+    #     return tensor
+
+    def __getitem__(self, idx):
+        label = self.labels[idx]
+        patient_tensor = self.read_patient(self.patients[idx])
+        return patient_tensor, label
+
+    def __len__(self):
+        return len(self.patients)
+path = "/Users/olipina001/Downloads/TelegramDesktop/DataDicPat/train"
+dataset = DicomDataset(path)
+dm = CTDataModule(path)
+dm.setup()
+img = dataset.__getitem__(0)
