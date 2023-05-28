@@ -12,7 +12,7 @@ from torch.utils.data import random_split, Dataset
 from torchvision import datasets, transforms
 from torchvision.datasets.vision import VisionDataset
 
-from src.image_transforms import crop_image, random_sharpness_or_blur
+from src.image_transforms import crop_image, random_sharpness_or_blur, AddGaussianNoise
 
 IMG_HEIGHT = 128
 IMG_WIDTH = 98
@@ -157,6 +157,7 @@ class DicomDataset(Dataset):
         patients_two = list(sub_pathes[1].glob("*/"))
         self.patients = patients_one + patients_two
         self.labels = [0] * len(patients_one) + [1] * len(patients_two)
+        self.transform =  transforms.Compose([AddGaussianNoise(mean=0.0, std=0.1)])
     def read_patient(self, path):
         dcm_files = list(path.glob("*.dcm"))
         tensor_list = []
@@ -165,6 +166,8 @@ class DicomDataset(Dataset):
             dcm_img = dcm_read.pixel_array.astype(float)
             dcm_img_norm = (dcm_img - np.min(dcm_img)) / (np.max(dcm_img) - np.min(dcm_img))
             dcm_tensor = torch.Tensor(dcm_img_norm)
+            if self.transform is not None:
+                dcm_tensor = self.transform(dcm_tensor)
             tensor_list.append(dcm_tensor)
         stacked_dcm = torch.stack(tensor_list)
         stacked_dcm_dim = stacked_dcm.unsqueeze(0)
