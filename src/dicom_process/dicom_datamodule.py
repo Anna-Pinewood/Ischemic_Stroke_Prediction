@@ -1,5 +1,6 @@
 import logging
 import os
+import SimpleITK as sitk
 from pathlib import Path
 from typing import Optional, Tuple, Union
 import cv2
@@ -11,11 +12,12 @@ from PIL import Image
 from torch.utils.data import random_split, Dataset
 from torchvision import datasets, transforms
 from torchvision.datasets.vision import VisionDataset
+from tqdm import tqdm
 
 from src.image_transforms import crop_image, random_sharpness_or_blur
 
-IMG_HEIGHT = 128
-IMG_WIDTH = 98
+IMG_HEIGHT = 500
+IMG_WIDTH = 500
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +65,7 @@ class DicomDataModule(pl.LightningDataModule):  # pylint: disable=too-many-insta
     @property
     def n_images(self) -> int:
         """How many initial images are there in datamodule."""
-        class_dirs = os.listdir(self.data_dir)
+        class_dirs = [path for path in Path(self.data_dir).glob("*") if path.is_dir()]
         n_files_1 = len(os.listdir(os.path.join(self.data_dir, class_dirs[0])))
         n_files_2 = len(os.listdir(os.path.join(self.data_dir, class_dirs[1])))
         return n_files_1 + n_files_2
@@ -82,7 +84,7 @@ class DicomDataModule(pl.LightningDataModule):  # pylint: disable=too-many-insta
 
             self.dataset = torch.utils.data.Subset(self.dataset,
                                                    np.random.choice(len(self.dataset),
-                                                                    self.n_stay_images, replace=False)
+                                                                    self.n_stay_images, replace=True)
                                                    )
 
             self.data_train, self.data_validation = random_split(self.dataset,
@@ -121,17 +123,20 @@ class DicomDataModule(pl.LightningDataModule):  # pylint: disable=too-many-insta
 class DicomDataset(Dataset):
     def __init__(self, root_dir):
         self.root_dir = Path(root_dir)
-        sub_pathes = list(self.root_dir.glob("*/"))
-        patients_one = list(sub_pathes[0].glob("*/"))
-        patients_two = list(sub_pathes[1].glob("*/"))
+        sub_pathes = [path for path in self.root_dir.glob("*") if path.is_dir()]
+
+        patients_one = [path for path in sub_pathes[0].glob("*") if path.is_dir()]
+        patients_two = [path for path in sub_pathes[1].glob("*") if path.is_dir()]
         self.patients = patients_one + patients_two
         self.labels = [0] * len(patients_one) + [1] * len(patients_two)
+
+        self.patient_tensors = [self.read_process_sample(patient) for patient in self.patients]
 
     def read_patient(self, path):
         # dcm_files = list(path.glob("*.dcm"))
         dcm_files = list(path.glob("*"))
         tensor_list = []
-        for dcm in dcm_files:
+        for dcm in tqdm(dcm_files):
             dcm_read = pydicom.dcmread(dcm)
             dcm_img = dcm_read.pixel_array.astype(float)
             dcm_img_norm = (dcm_img - np.min(dcm_img)) / \
@@ -142,18 +147,65 @@ class DicomDataset(Dataset):
         stacked_dcm_dim = stacked_dcm.unsqueeze(0)
         return stacked_dcm_dim
 
-    # def read_dicom(file_path):
-    #     ds = pydicom.dcmread(file_path)
-    #     image = ds.pixel_array.astype(float)
-    #     image = (image - np.min(image)) / (np.max(image) - np.min(image))
-    #     tensor = np.zeros((1, image.shape[0], image.shape[1], 1))
-    #     tensor[0, :, :, 0] = image
-    #
-    #     return tensor
+
+    def cut_zeros(self, tensor: torch.Tensor):
+        # Find the indices of elements that are greater than the 10th percentile of tensor values
+        # Get the 10th percentile value
+        percentile_value = np.percentile(tensor.numpy(), 10)
+
+        # Find the indices of values greater than or equal to the percentile value along each dimension
+        nonzero_depth = torch.unique(
+            torch.nonzero(torch.sum(torch.sum(tensor >= percentile_value, dim=2), dim=2)).squeeze())
+        nonzero_rows = torch.unique(torch.nonzero(
+            torch.sum(torch.sum(tensor[:, nonzero_depth, :, :] >= percentile_value, dim=1), dim=1)).squeeze())
+        nonzero_cols = torch.unique(torch.nonzero(
+            torch.sum(torch.sum(tensor[:, nonzero_depth, :, :] >= percentile_value, dim=1), dim=0)).squeeze())
+
+        # Remove rows and columns with only zeros or values less than the percentile value
+        tensor = tensor[:, nonzero_depth, :, :]
+        tensor = tensor[:, :, nonzero_rows, :]
+        tensor = tensor[:, :, :, nonzero_cols]
+        return tensor
+
+    import SimpleITK as sitk
+    import torch
+
+    def resample_tensor(self, tensor, spacing, size):
+        """
+        Resample a PyTorch tensor using the SimpleITK library.
+
+        Args:
+            tensor: PyTorch tensor of shape [1, D, H, W]
+            spacing: Tuple of new voxel spacing in z, y, and x directions
+            size: Tuple of new image size in D, H, and W dimensions
+
+        Returns:
+            Resampled PyTorch tensor of shape [1, D_new, H_new, W_new]
+        """
+        # Convert PyTorch tensor to SimpleITK image
+        image = sitk.GetImageFromArray(tensor[0].numpy())
+        image.SetSpacing(spacing)
+
+        # Create resampled image with the desired size
+        resampled = sitk.Resample(image, list(size), sitk.Transform(), sitk.sitkLinear, image.GetOrigin(),
+                                  (spacing[0] * size[0], spacing[1] * size[1], spacing[2] * size[2]),
+                                  image.GetDirection(), 0.0,
+                                  image.GetPixelID())
+
+        # Convert SimpleITK image to PyTorch tensor
+        resampled_tensor = torch.from_numpy(sitk.GetArrayFromImage(resampled)).unsqueeze(0)
+
+        return resampled_tensor
+
+    def read_process_sample(self, patient_path):
+        patient_tensor = self.read_patient(patient_path)
+        patient_valid = self.cut_zeros(patient_tensor)
+        patient_resampled = self.resample_tensor(patient_valid, spacing=(0.5, 0.5, 0.5),size = (128, 256, 256))
+        return patient_valid
 
     def __getitem__(self, idx):
         label = self.labels[idx]
-        patient_tensor = self.read_patient(self.patients[idx])
+        patient_tensor = self.patient_tensors[idx]
         return patient_tensor, label
 
     def __len__(self):
