@@ -129,6 +129,7 @@ class DeepSymNetArd(LightningModule):
              y_true,
              loss_weight=1.,
              kl_weight=1.):
+        y_true = y_true.to(torch.float32)
         loss_fn = nn.BCELoss()(y_predicted, y_true)
         return loss_weight * loss_fn \
         + kl_weight * get_ard_reg(self)

@@ -39,6 +39,16 @@ def maxpool_output_shape(input_size: Tuple[int, int],
 def show_tensor(tensor_img: torch.Tensor):
     img_norm = tensor_img.permute(1, 2, 0)[:, :, 0].detach().numpy()
     plt.imshow(img_norm, cmap='gray')
+    # plt.savefig("/Users/olipina001/Downloads/fig.png")
+
+    # from matplotlib import pyplot as plt
+    #
+    # from src.utils import show_tensor
+    # img_norm = input2[0].permute(1, 2, 0)[:, :, 0].detach().numpy()
+    # plt.imshow(img_norm, cmap='gray')
+    # plt.savefig("/Users/olipina001/Downloads/fig.png")
+    # plt.show()
+
     plt.show()
 
 
