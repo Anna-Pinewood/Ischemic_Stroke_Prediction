@@ -14,7 +14,8 @@ from src.utils import maxpool_output_shape
 class ConvBlockArd(nn.Module):
     def __init__(self, in_channels, out_chanels, kernel_size, **kwargs):
         super().__init__()
-        self.conv = nn_ard.Conv2dARD(in_channels, out_chanels, kernel_size, **kwargs)
+        self.conv = nn_ard.Conv2dARD(
+            in_channels, out_chanels, kernel_size, **kwargs)
         self.bn = nn.BatchNorm2d(out_chanels)
 
     def forward(self, x):
@@ -128,18 +129,18 @@ class DeepSymNetArd(LightningModule):
              y_predicted,
              y_true,
              loss_weight=1.,
-             kl_weight=1.):
+             kl_weight=0.00001):
         y_true = y_true.to(torch.float32)
         loss_fn = nn.BCELoss()(y_predicted, y_true)
         return loss_weight * loss_fn \
-        + kl_weight * get_ard_reg(self)
+            + kl_weight * get_ard_reg(self)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
         loss = self.loss(y_hat, y)
         self.log("training_loss", loss, on_epoch=True,
-                 on_step=True, prog_bar=True)
+                 on_step=True, prog_bar=True, sync_dist=True)
         return loss
 
     def validation_step(self, val_batch, batch_idx):

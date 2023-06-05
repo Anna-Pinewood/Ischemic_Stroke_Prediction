@@ -139,6 +139,7 @@ nohup.out
 
 # pytorch lightning study logs
 lightning_logs/
+lightning_logs_ard/
 
 # IDE folders
 .vscode/

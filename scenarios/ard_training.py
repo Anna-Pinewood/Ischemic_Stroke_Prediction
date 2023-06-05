@@ -5,14 +5,16 @@ from src.CTDataModule import CTDataModule
 from src.neural_network_ard import DeepSymNetArd
 
 if __name__ == "__main__":
-    dataset_path = "/Users/olipina001/Downloads/NoBoneData/train"
-    batch_size = 8
-    num_workers = 8
+    dataset_path = "/home/martinumer/NoBoneData/train"
+    batch_size = 10
+    num_workers = 16
     throw_out_random = 0
     patience = 50
     min_epochs = 10
     max_epochs = 100
-    gpu = False
+    gpu = True
+    version_name = "june_fourth"
+
     dm = CTDataModule(data_dir=dataset_path,
                       batch_size=batch_size,
                       num_workers=num_workers,
@@ -24,7 +26,9 @@ if __name__ == "__main__":
         save_top_k=2)
     early_stop_callback = EarlyStopping(
         monitor="val_loss", min_delta=0.03, patience=patience, mode="min")
-    tb_logger = pl.loggers.TensorBoardLogger(save_dir="lightning_logs")
+    tb_logger = pl.loggers.TensorBoardLogger(
+        save_dir="/home/high_fly_bird/workspace/Ischemic_Stroke_Prediction/lightning_logs_ard",
+        version=version_name)
     model = DeepSymNetArd()
     trainer = pl.Trainer(logger=tb_logger,
                          min_epochs=min_epochs,
